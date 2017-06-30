@@ -1,1 +1,1 @@
-// TODO: destroids.io
+// TODO: copy from destroids.io

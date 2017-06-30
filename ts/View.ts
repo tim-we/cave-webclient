@@ -1,4 +1,7 @@
-var webgl = null;
+import Model from "./Model";
+
+var webgl: WebGLRenderingContext = null;
+var model: Model = null;
 
 export function setCanvas(canvas: HTMLCanvasElement):void {
 	try {
@@ -12,10 +15,25 @@ export function setCanvas(canvas: HTMLCanvasElement):void {
 	}
 }
 
-export function start():void {
+export function start(m: Model): void {
+	model = m;
 	draw();
 }
 
-function draw():void {
+export function stop(): void {
+	model = null;
+}
+
+function draw(): void {
+	if (!model) { return; }
+
+	let gl:WebGLRenderingContext = webgl;
+	gl.clear(gl.COLOR_BUFFER_BIT);
+
+	gl.bindBuffer(gl.ARRAY_BUFFER, model.Map.VertexBuffer);
+	//gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+	//setMatrixUniforms();
+	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
 	window.requestAnimationFrame(draw);
 }
