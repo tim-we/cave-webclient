@@ -5,14 +5,16 @@ import { ServerGameInit } from "./ICommunication";
 export default class Model {
 
 	public Time: number;
-
-	private NextTime: number;
+	private TimeDelta: number;
+	private LastUpdate: number;
 
 	public Players: Player[];
 
 	public Player: Player;
 
 	public Map: Map;
+
+	public Rotation: number;
 
 	private userInput: boolean = false;
 
@@ -26,7 +28,7 @@ export default class Model {
 
 		// set up timestamps
 		this.Time = data.t;
-		this.NextTime = data.t;
+		this.TimeDelta = 0.0;
 
 		// create player objects
 		this.Players = new Array(n);
@@ -37,8 +39,11 @@ export default class Model {
 
 		this.Player = this.Players[data.i];
 
-		// make this.Players immutable (not the Player objects though)
-		Object.freeze(this.Players); // fixed size array (es2015)
+		/* make this.Players immutable (not the Player objects though)
+		 * so that it becomes a fixed size array (es2015).
+		 * no garbage-collection here!
+		 */
+		Object.freeze(this.Players);
 
 		// create map
 		this.Map = new Map();
@@ -48,5 +53,17 @@ export default class Model {
 		this.userInput = pressed;
 
 		// TODO: update server
+	}
+
+	public update():void {
+		let d: number = performance.now() - this.LastUpdate; //ms
+
+		let t: number = (this.TimeDelta === 0.0) ? 0.0 : d / this.TimeDelta;
+		t = Math.max(Math.min(t, 2.0), 0.0);
+
+		// move players
+		this.Players.forEach(p => {
+			p.move(t);
+		});
 	}
 }
