@@ -1,0 +1,11 @@
+{
+  "name": "cave-webclient",
+  "version": "1.0.0",
+  "description": "",
+  "main": "js/bundle/game.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "timw",
+  "license": "ISC"
+}
