@@ -27,12 +27,13 @@ module.exports = [
 		plugins: []
 	},
 
-	{
+	/*{
 		entry: "./ts/Controller.ts",
 
 		output: {
 			filename: "./js/bundle/game.min.js",
 		},
+
 
 		module: {
 			rules: [
@@ -41,6 +42,10 @@ module.exports = [
 				loader: 'ts-loader',
 				exclude: /node_modules/,
 				},
+			],
+
+			loaders: [
+				{ test: /\.js$/, loader: "webpack-unassert-loader" }
 			]
 		},
 
@@ -54,5 +59,5 @@ module.exports = [
 				compress: true
 			})
 		]
-	}
+	}*/
 ];

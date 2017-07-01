@@ -9,6 +9,7 @@
   "author": "timw",
   "license": "ISC",
   "devDependencies": {
-    "ts-loader": "^2.2.1"
+    "ts-loader": "^2.2.1",
+    "webpack-unassert-loader": "^1.1.0"
   }
 }

@@ -1,12 +1,13 @@
 import Player from "./Player";
 import Map from "./Map";
-import { ServerGameInit } from "./ICommunication";
+import { ServerGameInit, ServerGameMessage } from "./ICommunication";
 
 export default class Model {
 
-	public Time: number;
+	public Time: number; // current model time
+	private NextTime: number; // time from the latest server update
 	private TimeDelta: number;
-	private LastUpdate: number;
+	private LastUpdate: number; // local timestamp
 
 	public Players: Player[];
 
@@ -41,7 +42,6 @@ export default class Model {
 
 		/* make this.Players immutable (not the Player objects though)
 		 * so that it becomes a fixed size array (es2015).
-		 * no garbage-collection here!
 		 */
 		Object.freeze(this.Players);
 
@@ -55,15 +55,39 @@ export default class Model {
 		// TODO: update server
 	}
 
-	public update():void {
-		let d: number = performance.now() - this.LastUpdate; //ms
+	public updateData(data: ServerGameMessage) {
+		console.assert(data.t >= this.NextTime);
+		console.assert(data.ps.length === this.Players.length);
+		console.assert(data.as.length === this.Players.length);
+		
+		this.TimeDelta = Math.max(32, data.t - this.Time); // 2 frames to catch up
+		this.NextTime = data.t;
 
-		let t: number = (this.TimeDelta === 0.0) ? 0.0 : d / this.TimeDelta;
+		this.Players.forEach((p:Player, i:number) => {
+			let pos = data.ps[i];
+			p.updateData(pos.x, pos.y, data.as[i]);
+		});
+	}
+
+	public update(): void {
+		if (this.TimeDelta <= 0.0) { return; }
+
+		let d: number = performance.now() - this.LastUpdate; //ms
+		this.LastUpdate = performance.now();
+
+		if (this.Time > this.NextTime) {
+			this.Time = this.NextTime;
+		} else {
+			this.Time += d;
+		}
+
+		let t: number = d / this.TimeDelta;
 		t = Math.max(Math.min(t, 2.0), 0.0);
 
-		// move players
+		// move players, collision-detection on server
 		this.Players.forEach(p => {
 			p.move(t);
 		});
+
 	}
 }

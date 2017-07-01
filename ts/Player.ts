@@ -9,15 +9,20 @@ export default class Player {
 
 	public PDeltaLength: number;
 
+	public Alive: boolean;
+
 	constructor(name: String) {
 		this.Position = new Vector(0, 0);
 		this.PDelta = new Vector(0, 0);
 		this.PDeltaLength = 0;
+		this.Alive = true;
 	}
 
-	public updateData(px: number, py: number): void {
+	public updateData(px: number, py: number, alive:boolean): void {
 		this.PDelta.diff2d(px, py);
 		this.PDeltaLength = this.PDelta.length();
+
+		this.Alive = alive;
 	}
 
 	public move(a: number) {
