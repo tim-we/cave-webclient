@@ -91,6 +91,7 @@ function mainloop() {
 }
 function test() {
     model = new Model_1.default({
+        type: 0,
         n: 1,
         i: 0,
         t: -3,
@@ -118,8 +119,15 @@ class Model {
         this.Time = data.t;
         this.TimeDelta = 0.0;
         this.Players = new Array(n);
+        let z = 1.0;
         for (let i = 0; i < n; i++) {
-            this.Players[i] = new Player_1.default(data.names[i]);
+            if (i === data.i) {
+                this.Players[i] = new Player_1.default(data.names[i], 0);
+            }
+            else {
+                this.Players[i] = new Player_1.default(data.names[i], z);
+                z += 1.0;
+            }
         }
         this.Player = this.Players[data.i];
         Object.freeze(this.Players);
@@ -169,12 +177,15 @@ exports.default = Model;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Vector_1 = __webpack_require__(3);
+exports.TAILLENGTH = 42;
 class Player {
-    constructor(name) {
+    constructor(name, zPos) {
         this.Position = new Vector_1.default(0, 0);
+        this.Z = zPos;
         this.PDelta = new Vector_1.default(0, 0);
         this.PDeltaLength = 0;
         this.Alive = true;
+        this.Tail = new Float32Array(exports.TAILLENGTH * 3);
     }
     updateData(px, py, alive) {
         this.PDelta.diff2d(px, py);
@@ -183,9 +194,25 @@ class Player {
     }
     move(a) {
         Vector_1.default.axpy(a, this.PDelta, this.Position);
+        typedArrayUnshift(this.Tail, 3);
+        this.Tail[0] = this.Position.getX();
+        this.Tail[1] = this.Position.getY();
+        this.Tail[2] = this.Z;
     }
 }
 exports.default = Player;
+function typedArrayUnshift(arr, k) {
+    let n = arr.length;
+    let p;
+    let i;
+    let j;
+    for (i = n - k; i > 0; i -= k) {
+        p = i - k;
+        for (j = 0; j < k; j++) {
+            arr[i + j] = arr[p + j];
+        }
+    }
+}
 
 
 /***/ }),

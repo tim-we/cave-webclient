@@ -33,9 +33,15 @@ export default class Model {
 
 		// create player objects
 		this.Players = new Array(n);
+		let z: number = 1.0;
 
 		for (let i = 0; i < n; i++) {
-			this.Players[i] = new Player(data.names[i]);
+			if (i === data.i) {
+				this.Players[i] = new Player(data.names[i], 0);
+			} else {
+				this.Players[i] = new Player(data.names[i], z);
+				z += 1.0;
+			}
 		}
 
 		this.Player = this.Players[data.i];
