@@ -24,4 +24,9 @@ export function draw(model:Model): void {
 	//setMatrixUniforms();
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 	
+	/* draw the tail:
+	 * var buffer = gl.createBuffer();
+	 * gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+	 * gl.bufferData(gl.ARRAY_BUFFER, player.Tail.buffer, gl.STATIC_DRAW);
+	 */
 }
