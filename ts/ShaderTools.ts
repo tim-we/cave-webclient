@@ -19,6 +19,7 @@ export function makeShader(gl: WebGLRenderingContext, type:number, source: strin
 }
 
 export function createProgram(gl:WebGLRenderingContext, shaders:WebGLShader[]):WebGLProgram {
+  console.assert(shaders.length > 0);
   let program: WebGLProgram = gl.createProgram();
 
   // attach all shaders & link
@@ -46,4 +47,6 @@ export function simpleProgram(gl: WebGLRenderingContext, vssource: string, fssou
 
   //vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
   //gl.enableVertexAttribArray(vertexPositionAttribute);
+
+  return shaderProgram;
 }
