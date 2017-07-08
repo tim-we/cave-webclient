@@ -19,6 +19,9 @@ module.exports = [
 		},
 
 		devtool: "source-map",
+		performance: {
+			hints: "warning"
+		},
 
 		resolve: {
 			extensions: [".ts", ".js"]

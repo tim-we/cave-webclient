@@ -19,7 +19,7 @@ export function draw(model:Model): void {
 	let gl:WebGLRenderingContext = webgl;
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
-	gl.bindBuffer(gl.ARRAY_BUFFER, model.Map.VertexBuffer);
+	//gl.bindBuffer(gl.ARRAY_BUFFER, model.Map.VertexBuffer);
 	//gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
 	//setMatrixUniforms();
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
