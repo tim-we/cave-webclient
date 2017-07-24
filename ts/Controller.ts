@@ -9,9 +9,7 @@ function connect() {
 }
 
 window.addEventListener("load", () => {
-	let canvas:HTMLCanvasElement = <HTMLCanvasElement> document.getElementById("game");
-
-	View.setCanvas(canvas);
+	View.init();
 
 	test();
 });

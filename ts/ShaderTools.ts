@@ -11,7 +11,7 @@ export function makeShader(gl: WebGLRenderingContext, type:number, source: strin
 
   // see if it compiled successfully
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error("Shader compile error " + gl.getShaderInfoLog(shader));
+    console.error("Shader compile error ", gl.getShaderInfoLog(shader));
     return null;
   }
 
@@ -28,14 +28,22 @@ export function createProgram(gl:WebGLRenderingContext, shaders:WebGLShader[]):W
 
   // see if linking worked
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error("Unable to initialize the shader program: " + gl.getProgramInfoLog(program));
+    console.error("Unable to initialize the shader program.", gl.getProgramInfoLog(program));
     return null;
   }
+
+  /* for DEBUG only:
+  gl.validateProgram(program);
+  if(!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
+    console.error("Error validating program.", gl.getProgramInfoLog(program));
+    return null;
+  }
+  */
 
   return program;
 }
 
-export function simpleProgram(gl: WebGLRenderingContext, vssource: string, fssource: string): WebGLProgram {
+export function createProgramFromSource(gl: WebGLRenderingContext, vssource: string, fssource: string): WebGLProgram {
   let shaders: WebGLShader[] = [
     makeShader(gl, gl.VERTEX_SHADER, vssource),
     makeShader(gl, gl.FRAGMENT_SHADER, fssource)

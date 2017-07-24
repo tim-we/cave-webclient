@@ -78,8 +78,7 @@ function connect() {
     ws = new WebSocket("ws://destroids.io:8000");
 }
 window.addEventListener("load", () => {
-    let canvas = document.getElementById("game");
-    View.setCanvas(canvas);
+    View.init();
     test();
 });
 function mainloop() {
@@ -261,7 +260,27 @@ exports.default = Vector;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const N = 42;
+const SEGMENT_SIZE = 2 * 3 * 2;
 class Map {
+    constructor() {
+        this.data = new Float32Array(SEGMENT_SIZE * N);
+        this.i = 0;
+    }
+    update(data) {
+        let n = data.length / 8;
+        let k, d, i, o, j;
+        for (k = 0; k < n; k++) {
+            d = this.i * SEGMENT_SIZE;
+            o = k * 8;
+            for (i = 0; i < 3; i++) {
+                this.data[d + 2 * i] = data[o + 2 * i];
+                this.data[d + 2 * i + 1] = data[o + 2 * i + 1];
+            }
+            for (i = 0; i < 3; i++) {
+            }
+        }
+    }
 }
 exports.default = Map;
 
@@ -273,26 +292,89 @@ exports.default = Map;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var webgl = null;
-function setCanvas(canvas) {
+const Renderer = __webpack_require__(6);
+var canvas;
+function init() {
+    canvas = document.getElementById("game");
+    Renderer.init(canvas);
+}
+exports.init = init;
+function draw(model) {
+    Renderer.draw();
+}
+exports.draw = draw;
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const ShaderTools_1 = __webpack_require__(7);
+var gl = null;
+function init(canvas) {
     try {
-        webgl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
     }
     catch (e) {
         console.warn("Error initializing webgl.");
     }
-    if (!webgl) {
+    if (!gl) {
         alert("Unable to initialize WebGL. Your browser may not support it.");
+        return;
     }
+    let p = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"../shader/map.vert!text\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())), __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"../shader/map.frag!text\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())));
 }
-exports.setCanvas = setCanvas;
-function draw(model) {
-    let gl = webgl;
+exports.init = init;
+function draw() {
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.bindBuffer(gl.ARRAY_BUFFER, model.Map.VertexBuffer);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 exports.draw = draw;
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function makeShader(gl, type, source) {
+    console.assert(type === gl.VERTEX_SHADER || type === gl.FRAGMENT_SHADER);
+    let shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error("Shader compile error ", gl.getShaderInfoLog(shader));
+        return null;
+    }
+    return shader;
+}
+exports.makeShader = makeShader;
+function createProgram(gl, shaders) {
+    console.assert(shaders.length > 0);
+    let program = gl.createProgram();
+    shaders.forEach(shader => gl.attachShader(program, shader));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error("Unable to initialize the shader program.", gl.getProgramInfoLog(program));
+        return null;
+    }
+    return program;
+}
+exports.createProgram = createProgram;
+function createProgramFromSource(gl, vssource, fssource) {
+    let shaders = [
+        makeShader(gl, gl.VERTEX_SHADER, vssource),
+        makeShader(gl, gl.FRAGMENT_SHADER, fssource)
+    ];
+    let shaderProgram = createProgram(gl, shaders);
+    gl.useProgram(shaderProgram);
+    return shaderProgram;
+}
+exports.createProgramFromSource = createProgramFromSource;
 
 
 /***/ })
