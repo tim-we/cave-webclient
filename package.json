@@ -10,7 +10,8 @@
   "license": "ISC",
   "devDependencies": {
     "raw-loader": "^0.5.1",
-    "ts-loader": "^2.2.1",
-    "webpack-unassert-loader": "^1.1.0"
+    "ts-loader": "^2.3.3",
+    "webpack-unassert-loader": "^1.2.0",
+    "webpack": "^3.5.5"
   }
 }
