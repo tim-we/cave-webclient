@@ -18,8 +18,8 @@ export function init(canvas: HTMLCanvasElement):void {
 
 	let p: WebGLProgram = createProgramFromSource(
 		gl,
-		require("../shader/map.vert!text"),
-		require("../shader/map.frag!text")
+		require("../shader/map.vert"),
+		require("../shader/map.frag")
 	);
 }
 

@@ -325,7 +325,7 @@ function init(canvas) {
         alert("Unable to initialize WebGL. Your browser may not support it.");
         return;
     }
-    let p = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"../shader/map.vert!text\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())), __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"../shader/map.frag!text\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())));
+    let p = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(8), __webpack_require__(9));
 }
 exports.init = init;
 function draw() {
@@ -376,6 +376,18 @@ function createProgramFromSource(gl, vssource, fssource) {
 }
 exports.createProgramFromSource = createProgramFromSource;
 
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports) {
+
+module.exports = "precision mediump float;\r\n\r\nattribute vec3 aVertexPosition;\r\n\r\nuniform float z;\r\n\r\nvarying vec4 color;\r\n\r\nuniform mat4 uMVMatrix;\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition + vec3(0.0,0.0,z), 1.0);\r\n}"
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports) {
+
+module.exports = "precision mediump float;\r\n\r\nvarying vec4 color;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = color;\r\n}"
 
 /***/ })
 /******/ ]);

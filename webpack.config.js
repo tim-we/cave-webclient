@@ -11,10 +11,15 @@ module.exports = [
 		module: {
 			rules: [
 				{
-				test: /\.tsx?$/,
-				loader: 'ts-loader',
-				exclude: /node_modules/,
+					test: /\.tsx?$/,
+					loader: 'ts-loader',
+					exclude: /node_modules/,
 				},
+				{
+					test: /\.(frag|vert)$/,
+					loader: 'raw-loader',
+					include: /shader/
+				}
 			]
 		},
 
@@ -24,10 +29,8 @@ module.exports = [
 		},
 
 		resolve: {
-			extensions: [".ts", ".js"]
-		},
-
-		plugins: []
+			extensions: [".ts", ".js", ".frag", ".vert"]
+		}
 	},
 
 	/*{
@@ -41,10 +44,15 @@ module.exports = [
 		module: {
 			rules: [
 				{
-				test: /\.tsx?$/,
-				loader: 'ts-loader',
-				exclude: /node_modules/,
+					test: /\.tsx?$/,
+					loader: 'ts-loader',
+					exclude: /node_modules/,
 				},
+				{
+					test: /\.(frag|vert)$/,
+					loader: 'raw-loader',
+					include: /shader/
+				}
 			],
 
 			loaders: [
@@ -53,7 +61,7 @@ module.exports = [
 		},
 
 		resolve: {
-			extensions: [".ts", ".js"]
+			extensions: [".ts", ".js", ".frag", ".vert"]
 		},
 
 		plugins: [
