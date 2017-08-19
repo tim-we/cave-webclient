@@ -12,6 +12,8 @@ window.addEventListener("load", () => {
 	View.init();
 
 	test();
+
+	mainloop();
 });
 
 function mainloop() {
@@ -27,9 +29,9 @@ function mainloop() {
 function test() {
 	model = new Model({
 		type: 0,
-		n: 1,
-		i: 0,
-		t: -3,
+		n: 1,	// number of players
+		i: 0,	// player index
+		t: -3,	// time
 		names: ["Bob"]
 	});
 }
