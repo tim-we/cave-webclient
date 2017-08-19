@@ -18,6 +18,7 @@ export default class Model {
 	public Rotation: number;
 
 	private userInput: boolean = false;
+	public onUserInputChange: (pressed: boolean) => void = () => { };
 
 	constructor(data:ServerGameInit) {
 		let n: number = data.n; // number of players
@@ -55,10 +56,12 @@ export default class Model {
 		this.Map = new Map();
 	}
 
-	public setUserInput(pressed:boolean): void {
-		this.userInput = pressed;
+	public setUserInput(pressed: boolean): void {
+		if (this.userInput !== pressed) {
+			this.userInput = pressed;
 
-		// TODO: update server
+			this.onUserInputChange(pressed);
+		}
 	}
 
 	public updateData(data: ServerGameMessage) {

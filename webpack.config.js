@@ -10,7 +10,7 @@ module.exports = [
 		entry: "./ts/Controller.ts",
 
 		output: {
-			filename: debug ? "./js/bundle/game.min.js": "./js/bundle/game.js",
+			filename: debug ? "./js/bundle/game.js": "./js/bundle/game.min.js",
 		},
 
 		module: {

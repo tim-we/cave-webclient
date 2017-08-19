@@ -1,12 +1,12 @@
 import Model from "./Model";
 import * as View from "./View";
+import { Connection } from "./IConnection";
 
-var ws: WebSocket = null;
+import Server from "./Server";
+import LocalTestServer from "./LocalTestServer";
+
+var connection: Connection = null;
 var model: Model = null;
-
-function connect() {
-	ws = new WebSocket("ws://destroids.io:8000");
-}
 
 window.addEventListener("load", () => {
 	View.init();
@@ -27,6 +27,8 @@ function mainloop() {
 }
 
 function test() {
+	connection = new LocalTestServer();
+
 	model = new Model({
 		type: 0,
 		n: 1,	// number of players
@@ -34,4 +36,8 @@ function test() {
 		t: -3,	// time
 		names: ["Bob"]
 	});
+
+	model.onUserInputChange = (pressed: boolean) => {
+		connection.sendInput(pressed);
+	}
 }
