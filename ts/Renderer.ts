@@ -32,6 +32,8 @@ export function init(canvas: HTMLCanvasElement):void {
 
 	mapVertexPosAttrib = gl.getAttribLocation(mapProgram, "aVertexPosition");
 	gl.enableVertexAttribArray(mapVertexPosAttrib);
+
+	gl.clearColor(0.0, 1.0, 0.0, 1.0);
 }
 
 export function setModel(m: Model) {

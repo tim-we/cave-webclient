@@ -9,16 +9,16 @@ var connection: Connection = null;
 var model: Model = null;
 
 window.addEventListener("load", () => {
-	View.init();
-
 	test();
+	
+	View.init(model);
 
 	mainloop();
 });
 
 function mainloop() {
 	if (model) {
-		View.draw(model);
+		View.draw();
 
 		model.update();
 	}
