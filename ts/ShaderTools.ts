@@ -51,10 +51,7 @@ export function createProgramFromSource(gl: WebGLRenderingContext, vssource: str
 
   let shaderProgram: WebGLProgram = createProgram(gl, shaders);
 
-  gl.useProgram(shaderProgram);
-
-  //vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-  //gl.enableVertexAttribArray(vertexPositionAttribute);
+  //gl.useProgram(shaderProgram);
 
   return shaderProgram;
 }

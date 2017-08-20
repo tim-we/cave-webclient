@@ -1,8 +1,14 @@
 import { createProgramFromSource } from "./ShaderTools";
+import Model from "./Model";
 
 declare function require(name: string): any;
 
 var gl: WebGLRenderingContext = null;
+var model: Model = null;
+
+var mapBuffer: WebGLBuffer = null;
+var mapProgram: WebGLProgram = null;
+var mapVertexPosAttrib:number = null;
 
 export function init(canvas: HTMLCanvasElement):void {
 	try {
@@ -16,17 +22,37 @@ export function init(canvas: HTMLCanvasElement):void {
 		return;
 	}
 
-	let p: WebGLProgram = createProgramFromSource(
+	mapBuffer = gl.createBuffer();
+
+	mapProgram = createProgramFromSource(
 		gl,
 		require("../shader/map.vert"),
 		require("../shader/map.frag")
 	);
+
+	mapVertexPosAttrib = gl.getAttribLocation(mapProgram, "aVertexPosition");
+	gl.enableVertexAttribArray(mapVertexPosAttrib);
+}
+
+export function setModel(m: Model) {
+	model = m;
 }
 
 export function draw() {
+	if (model === null) { return; }
+
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
-	//gl.bindBuffer(gl.ARRAY_BUFFER, model.Map.VertexBuffer);
+	gl.useProgram(mapProgram);
+
+	gl.bindBuffer(gl.ARRAY_BUFFER, mapBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, model.Map.data, gl.STREAM_DRAW);
+	
+	gl.vertexAttribPointer(mapVertexPosAttrib, 3, gl.FLOAT, false, 0, 0);
+
+	gl.drawArrays(gl.TRIANGLES, 0, model.Map.numTriangles()); // TRIANGLE_STRIP is more efficient
+	// https://en.wikipedia.org/wiki/Triangle_strip
+
 	//gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
 	//setMatrixUniforms();
 	//gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

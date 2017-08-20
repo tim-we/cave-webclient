@@ -11,6 +11,10 @@ export default class Map {
 		this.i = 0;
 	}
 
+	public numTriangles(): number {
+		return N;
+	}
+
 	public update(data: Float32Array):void {
 		let n: number = data.length / 8; // 2 * 4 (2D * |Segment Corners|)
 
