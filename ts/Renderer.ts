@@ -1,5 +1,6 @@
 import { createProgramFromSource } from "./ShaderTools";
 import Model from "./Model";
+import Matrix from "./Matrix";
 
 declare function require(name: string): any;
 
@@ -8,13 +9,17 @@ var model: Model = null;
 
 var mapBuffer: WebGLBuffer = null;
 var mapProgram: WebGLProgram = null;
-var mapVertexPosAttrib:number = null;
+var mapVertexPosAttrib: number = null;
+
+var projMatrix: Matrix = new Matrix();
+var pMUniform: WebGLUniformLocation = null;
 
 export function init(canvas: HTMLCanvasElement):void {
 	try {
 		gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
 	} catch (e) {
 		console.warn("Error initializing webgl.");
+		return;
 	}
 
 	if (!gl) {
@@ -24,14 +29,17 @@ export function init(canvas: HTMLCanvasElement):void {
 
 	mapBuffer = gl.createBuffer();
 
-	mapProgram = createProgramFromSource(
-		gl,
-		require("../shader/map.vert"),
-		require("../shader/map.frag")
-	);
+	// map program
+		mapProgram = createProgramFromSource(
+			gl,
+			require("../shader/map.vert"),
+			require("../shader/map.frag")
+		);
 
-	mapVertexPosAttrib = gl.getAttribLocation(mapProgram, "aVertexPosition");
-	gl.enableVertexAttribArray(mapVertexPosAttrib);
+		mapVertexPosAttrib = gl.getAttribLocation(mapProgram, "aVertexPosition");
+		gl.enableVertexAttribArray(mapVertexPosAttrib);
+
+		pMUniform = gl.getUniformLocation(mapProgram, "uPMatrix");
 
 	gl.clearColor(0.0, 1.0, 0.0, 1.0);
 }
@@ -52,6 +60,7 @@ export function draw() {
 	
 	gl.vertexAttribPointer(mapVertexPosAttrib, 3, gl.FLOAT, false, 0, 0);
 
+	projMatrix.uniform(gl, pMUniform);
 	gl.drawArrays(gl.TRIANGLES, 0, model.Map.numTriangles()); // TRIANGLE_STRIP is more efficient
 	// https://en.wikipedia.org/wiki/Triangle_strip
 
