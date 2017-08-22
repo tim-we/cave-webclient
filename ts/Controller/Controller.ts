@@ -1,5 +1,5 @@
-import Model from "./Model";
-import * as View from "./View";
+import Model from "../Model/Model";
+import * as View from "../View/View";
 import { Connection } from "./IConnection";
 
 import Server from "./Server";

@@ -7,7 +7,7 @@ console.log(debug ? "DEBUG mode!" : "PRODUCTION!");
 
 module.exports = [
 	{
-		entry: "./ts/Controller.ts",
+		entry: "./ts/Controller/Controller.ts",
 
 		output: {
 			filename: debug ? "./js/bundle/game.js": "./js/bundle/game.min.js",

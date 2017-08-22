@@ -1,6 +1,6 @@
 import { createProgramFromSource } from "./ShaderTools";
-import Model from "./Model";
-import Matrix from "./Matrix";
+import Model from "../Model/Model";
+import Matrix from "../Model/Matrix";
 
 declare function require(name: string): any;
 
@@ -32,8 +32,8 @@ export function init(canvas: HTMLCanvasElement):void {
 	// map program
 		mapProgram = createProgramFromSource(
 			gl,
-			require("../shader/map.vert"),
-			require("../shader/map.frag")
+			require("../../shader/map.vert"),
+			require("../../shader/map.frag")
 		);
 
 		mapVertexPosAttrib = gl.getAttribLocation(mapProgram, "aVertexPosition");

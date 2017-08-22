@@ -1,6 +1,6 @@
 import Player from "./Player";
 import Map from "./Map";
-import { ServerGameInit, ServerGameMessage } from "./ICommunication";
+import { ServerGameInit, ServerGameMessage } from "../Controller/ICommunication";
 
 export default class Model {
 
