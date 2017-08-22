@@ -8,6 +8,10 @@ export function init(model:Model) {
 
 	Renderer.init(canvas);
 	Renderer.setModel(model);
+
+	document.addEventListener("resize", function () {
+		Renderer.resize();
+	});
 }
 
 export function draw(): void {

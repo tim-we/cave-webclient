@@ -72,7 +72,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const Model_1 = __webpack_require__(1);
 const View = __webpack_require__(5);
-const LocalTestServer_1 = __webpack_require__(11);
+const LocalTestServer_1 = __webpack_require__(13);
 var connection = null;
 var model = null;
 window.addEventListener("load", () => {
@@ -308,6 +308,9 @@ function init(model) {
     canvas = document.getElementById("game");
     Renderer.init(canvas);
     Renderer.setModel(model);
+    document.addEventListener("resize", function () {
+        Renderer.resize();
+    });
 }
 exports.init = init;
 function draw() {
@@ -323,15 +326,11 @@ exports.draw = draw;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShaderTools_1 = __webpack_require__(7);
-const Matrix_1 = __webpack_require__(8);
+const Matrix_1 = __webpack_require__(7);
+const MapRenderer = __webpack_require__(8);
 var gl = null;
 var model = null;
-var mapBuffer = null;
-var mapProgram = null;
-var mapVertexPosAttrib = null;
 var projMatrix = new Matrix_1.default();
-var pMUniform = null;
 function init(canvas) {
     try {
         gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
@@ -344,12 +343,8 @@ function init(canvas) {
         alert("Unable to initialize WebGL. Your browser may not support it.");
         return;
     }
-    mapBuffer = gl.createBuffer();
-    mapProgram = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(9), __webpack_require__(10));
-    mapVertexPosAttrib = gl.getAttribLocation(mapProgram, "aVertexPosition");
-    gl.enableVertexAttribArray(mapVertexPosAttrib);
-    pMUniform = gl.getUniformLocation(mapProgram, "uPMatrix");
-    gl.clearColor(0.0, 1.0, 0.0, 1.0);
+    resize();
+    MapRenderer.init(gl);
 }
 exports.init = init;
 function setModel(m) {
@@ -360,19 +355,125 @@ function draw() {
     if (model === null) {
         return;
     }
+    MapRenderer.draw(projMatrix);
+}
+exports.draw = draw;
+function resize() {
+    let w = gl.drawingBufferWidth;
+    let h = gl.drawingBufferHeight;
+    if (w > h) {
+        projMatrix.makeScale(h / w, 1.0, 1.0, false);
+    }
+    else {
+        projMatrix.makeScale(1.0, w / h, 1.0, false);
+    }
+}
+exports.resize = resize;
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+class Matrix {
+    constructor() {
+        this.data = new Float32Array(4 * 4);
+        this.makeIdentity(false);
+    }
+    setEntry(row, column, value) {
+        this.data[row + 4 * column] = value;
+    }
+    makeZero() {
+        for (let i = 0; i < this.data.length; i++) {
+            this.data[i] = 0;
+        }
+    }
+    makeIdentity(zero = true) {
+        if (zero) {
+            this.makeZero();
+        }
+        for (let i = 0; i < 4; i++) {
+            this.setEntry(i, i, 1.0);
+        }
+    }
+    makeScale(x, y, z, zero = false) {
+        if (zero) {
+            this.makeZero();
+        }
+        this.setEntry(0, 0, x);
+        this.setEntry(1, 1, y);
+        this.setEntry(2, 2, z);
+        this.setEntry(3, 3, 1);
+    }
+    scale(x, y, z) {
+        for (let i = 0; i < 4; i++) {
+            this.data[i] *= x;
+        }
+        for (let i = 4; i < 8; i++) {
+            this.data[i] *= y;
+        }
+        for (let i = 8; i < 16; i++) {
+            this.data[i] *= z;
+        }
+    }
+    uniform(gl, location) {
+        gl.uniformMatrix4fv(location, false, this.data);
+    }
+}
+exports.default = Matrix;
+
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const ShaderTools_1 = __webpack_require__(9);
+const Color_1 = __webpack_require__(10);
+var data = null;
+var gl = null;
+var buffer = null;
+var program = null;
+var vertexPosAttrib = -1;
+var uniformPM = null;
+var bgColor = new Color_1.default(0.0, 1.0, 0.42);
+function init(_gl) {
+    gl = _gl;
+    buffer = gl.createBuffer();
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(11), __webpack_require__(12));
+    vertexPosAttrib = gl.getAttribLocation(program, "aVertexPosition");
+    gl.enableVertexAttribArray(vertexPosAttrib);
+    uniformPM = gl.getUniformLocation(program, "uPMatrix");
+}
+exports.init = init;
+function setModelMap(map) {
+    data = map;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, data.data, gl.STREAM_DRAW);
+}
+exports.setModelMap = setModelMap;
+function draw(proj) {
+    bgColor.setClearColor(gl);
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(mapProgram);
-    gl.bindBuffer(gl.ARRAY_BUFFER, mapBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, model.Map.data, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(mapVertexPosAttrib, 3, gl.FLOAT, false, 0, 0);
-    projMatrix.uniform(gl, pMUniform);
-    gl.drawArrays(gl.TRIANGLES, 0, model.Map.numTriangles());
+    if (!data) {
+        return;
+    }
+    gl.useProgram(program);
+    proj.uniform(gl, uniformPM);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.vertexAttribPointer(vertexPosAttrib, 3, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, data.numTriangles());
 }
 exports.draw = draw;
 
 
 /***/ }),
-/* 7 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -414,57 +515,40 @@ exports.createProgramFromSource = createProgramFromSource;
 
 
 /***/ }),
-/* 8 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-class Matrix {
-    constructor() {
-        this.data = new Float32Array(4 * 4);
-        for (let i = 0; i < 4; i++) {
-            this.setEntry(i, i, 1.0);
-        }
+class Color {
+    constructor(r, g, b, a = 1.0) {
+        this.red = r;
+        this.green = g;
+        this.blue = b;
+        this.alpha = a;
     }
-    setEntry(row, column, value) {
-        this.data[row + 4 * column] = value;
-    }
-    allZero() {
-        for (let i = 0; i < this.data.length; i++) {
-            this.data[i] = 0;
-        }
-    }
-    makeScale(x, y, z, zero = false) {
-        if (zero) {
-            this.allZero();
-        }
-        this.setEntry(0, 0, x);
-        this.setEntry(1, 1, y);
-        this.setEntry(2, 2, z);
-        this.setEntry(3, 3, 1);
-    }
-    uniform(gl, location) {
-        gl.uniformMatrix4fv(location, false, this.data);
+    setClearColor(gl) {
+        gl.clearColor(this.red, this.green, this.blue, this.alpha);
     }
 }
-exports.default = Matrix;
+exports.default = Color;
 
 
 /***/ }),
-/* 9 */
+/* 11 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nattribute vec3 aVertexPosition;\r\n\r\nuniform float z;\r\n\r\nvarying vec4 color;\r\n\r\nuniform mat4 uMVMatrix;\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition + vec3(0.0,0.0,z), 1.0);\r\n}"
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nvarying vec4 color;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = color;\r\n}"
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
