@@ -24,7 +24,7 @@ export function init(canvas: HTMLCanvasElement):void {
 		return;
 	}
 
-	resize();
+	resize(window.innerWidth, window.innerHeight);
 
 	// init map renderer
 	MapRenderer.init(gl);
@@ -33,6 +33,7 @@ export function init(canvas: HTMLCanvasElement):void {
 
 export function setModel(m: Model) {
 	model = m;
+	MapRenderer.setModelMap(model.Map);
 }
 
 export function draw() {
@@ -51,15 +52,12 @@ export function draw() {
 	 */
 }
 
-export function resize(): void {
-	let w: number = gl.drawingBufferWidth;
-	let h: number = gl.drawingBufferHeight;
-	
+export function resize(width:number, height:number): void {
 	// assume projMatrix is (scaled) identity
 
-	if (w > h) {
-		projMatrix.makeScale(h/w, 1.0, 1.0, false);
+	if (width > height) {
+		projMatrix.makeScale(height/width, 1.0, 1.0, false);
 	} else {
-		projMatrix.makeScale(1.0, w/h, 1.0, false);
+		projMatrix.makeScale(1.0, width/height, 1.0, false);
 	}
 }

@@ -85,7 +85,6 @@ function mainloop() {
         View.draw();
         model.update();
     }
-    window.requestAnimationFrame(mainloop);
 }
 function test() {
     connection = new LocalTestServer_1.default();
@@ -267,29 +266,33 @@ exports.default = Vector;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const N = 42;
+const N = 1;
 const SEGMENT_SIZE = 2 * 3 * 2;
+function setUpExampleData(data) {
+    console.assert(N === 1, "invalid number of segments");
+    let i = 0;
+    data[i++] = -0.8;
+    data[i++] = -0.5;
+    data[i++] = 0.2;
+    data[i++] = -0.5;
+    data[i++] = -0.5;
+    data[i++] = 0.5;
+    data[i++] = 0.5;
+    data[i++] = 0.5;
+    data[i++] = -0.5;
+    data[i++] = 0.5;
+    data[i++] = 0.2;
+    data[i++] = -0.5;
+}
 class Map {
     constructor() {
         this.data = new Float32Array(SEGMENT_SIZE * N);
-        this.i = 0;
+        setUpExampleData(this.data);
     }
     numTriangles() {
-        return N;
+        return 2 * N;
     }
     update(data) {
-        let n = data.length / 8;
-        let k, d, i, o, j;
-        for (k = 0; k < n; k++) {
-            d = this.i * SEGMENT_SIZE;
-            o = k * 8;
-            for (i = 0; i < 3; i++) {
-                this.data[d + 2 * i] = data[o + 2 * i];
-                this.data[d + 2 * i + 1] = data[o + 2 * i + 1];
-            }
-            for (i = 0; i < 3; i++) {
-            }
-        }
     }
 }
 exports.default = Map;
@@ -306,10 +309,17 @@ const Renderer = __webpack_require__(6);
 var canvas;
 function init(model) {
     canvas = document.getElementById("game");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     Renderer.init(canvas);
     Renderer.setModel(model);
-    document.addEventListener("resize", function () {
-        Renderer.resize();
+    window.addEventListener("resize", function () {
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+        canvas.width = w;
+        canvas.height = h;
+        Renderer.resize(w, h);
+        Renderer.draw();
     });
 }
 exports.init = init;
@@ -343,12 +353,13 @@ function init(canvas) {
         alert("Unable to initialize WebGL. Your browser may not support it.");
         return;
     }
-    resize();
+    resize(window.innerWidth, window.innerHeight);
     MapRenderer.init(gl);
 }
 exports.init = init;
 function setModel(m) {
     model = m;
+    MapRenderer.setModelMap(model.Map);
 }
 exports.setModel = setModel;
 function draw() {
@@ -358,14 +369,12 @@ function draw() {
     MapRenderer.draw(projMatrix);
 }
 exports.draw = draw;
-function resize() {
-    let w = gl.drawingBufferWidth;
-    let h = gl.drawingBufferHeight;
-    if (w > h) {
-        projMatrix.makeScale(h / w, 1.0, 1.0, false);
+function resize(width, height) {
+    if (width > height) {
+        projMatrix.makeScale(height / width, 1.0, 1.0, false);
     }
     else {
-        projMatrix.makeScale(1.0, w / h, 1.0, false);
+        projMatrix.makeScale(1.0, width / height, 1.0, false);
     }
 }
 exports.resize = resize;
@@ -441,20 +450,23 @@ var buffer = null;
 var program = null;
 var vertexPosAttrib = -1;
 var uniformPM = null;
+var uniformZ = null;
 var bgColor = new Color_1.default(0.0, 1.0, 0.42);
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
     program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(11), __webpack_require__(12));
-    vertexPosAttrib = gl.getAttribLocation(program, "aVertexPosition");
+    vertexPosAttrib = gl.getAttribLocation(program, "vPosition");
     gl.enableVertexAttribArray(vertexPosAttrib);
     uniformPM = gl.getUniformLocation(program, "uPMatrix");
+    uniformZ = gl.getUniformLocation(program, "zPos");
+    gl.useProgram(program);
 }
 exports.init = init;
 function setModelMap(map) {
     data = map;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data.data, gl.STREAM_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, data.data, gl.STATIC_DRAW);
 }
 exports.setModelMap = setModelMap;
 function draw(proj) {
@@ -464,10 +476,11 @@ function draw(proj) {
         return;
     }
     gl.useProgram(program);
-    proj.uniform(gl, uniformPM);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.vertexAttribPointer(vertexPosAttrib, 3, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.TRIANGLES, 0, data.numTriangles());
+    gl.vertexAttribPointer(vertexPosAttrib, 2, gl.FLOAT, false, 0, 0);
+    proj.uniform(gl, uniformPM);
+    gl.uniform1f(uniformZ, 0.5);
+    gl.drawArrays(gl.TRIANGLES, 0, 3 * data.numTriangles());
 }
 exports.draw = draw;
 
@@ -539,13 +552,13 @@ exports.default = Color;
 /* 11 */
 /***/ (function(module, exports) {
 
-module.exports = "precision mediump float;\r\n\r\nattribute vec3 aVertexPosition;\r\n\r\nuniform float z;\r\n\r\nvarying vec4 color;\r\n\r\nuniform mat4 uMVMatrix;\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition + vec3(0.0,0.0,z), 1.0);\r\n}"
+module.exports = "//precision mediump float;\r\n\r\nattribute vec2 vPosition;\r\n\r\nuniform float zPos;\r\n\r\n//varying vec4 color;\r\n\r\n//uniform mat4 uMVMatrix;\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n\t//gl_Position = uPMatrix * vec4(vPosition, zPos, 1.0);\r\n\t//gl_Position = uPMatrix * uMVMatrix * vec4(vPosition + vec3(0.0,0.0,zPos), 1.0);\r\n}"
 
 /***/ }),
 /* 12 */
 /***/ (function(module, exports) {
 
-module.exports = "precision mediump float;\r\n\r\nvarying vec4 color;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = color;\r\n}"
+module.exports = "precision mediump float;\r\n\r\n//varying vec4 color;\r\n\r\nvoid main(void) {\r\n\t//gl_FragColor = color;\r\n\tgl_FragColor = vec4(0.0,0.0,1.0,1.0); // blue\r\n}"
 
 /***/ }),
 /* 13 */

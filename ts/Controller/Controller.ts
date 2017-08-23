@@ -22,8 +22,6 @@ function mainloop() {
 
 		model.update();
 	}
-
-	window.requestAnimationFrame(mainloop);
 }
 
 function test() {
