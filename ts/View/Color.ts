@@ -16,6 +16,10 @@ export default class Color {
 		gl.clearColor(this.red, this.green, this.blue, this.alpha);
 	}
 
+	public setUniform(gl: WebGLRenderingContext, location:WebGLUniformLocation): void {
+		gl.uniform4f(location, this.red, this.green, this.blue, this.alpha);
+	}
+
 	public static interpolate(a: Color, b: Color, x: number, result:Color) {
 		let xb: number = 1.0 - x;
 

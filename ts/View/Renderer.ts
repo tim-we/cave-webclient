@@ -3,6 +3,7 @@ import Model from "../Model/Model";
 import Matrix from "../Model/Matrix";
 
 import * as MapRenderer from "./MapRenderer";
+import * as PlayerRenderer from "./PlayerRenderer";
 
 //declare function require(name: string): any;
 
@@ -28,7 +29,7 @@ export function init(canvas: HTMLCanvasElement):void {
 
 	// init map renderer
 	MapRenderer.init(gl);
-	
+	PlayerRenderer.init(gl);
 }
 
 export function setModel(m: Model) {
@@ -40,6 +41,8 @@ export function draw() {
 	if (model === null) { return; }
 	
 	MapRenderer.draw(projMatrix);
+	
+	model.Players.forEach(player => { PlayerRenderer.draw(projMatrix, player); });
 
 	//gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
 	//setMatrixUniforms();

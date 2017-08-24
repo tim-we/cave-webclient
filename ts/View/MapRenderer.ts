@@ -1,9 +1,9 @@
+declare function require(name: string): any;
+
 import { createProgramFromSource } from "./ShaderTools";
 import Color from "./Color";
 import Map from "../Model/Map";
 import Matrix from "../Model/Matrix";
-
-declare function require(name: string): any;
 
 var data: Map = null;
 var bufferVersion: number = -1;
@@ -36,7 +36,7 @@ export function init(_gl:WebGLRenderingContext) {
 		uniformPM = gl.getUniformLocation(program, "uPMatrix");
 		uniformZ = gl.getUniformLocation(program, "zPos");
 	
-	gl.useProgram(program);
+	//gl.useProgram(program);
 }
 
 export function setModelMap(map:Map) {
