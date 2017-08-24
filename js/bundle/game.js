@@ -268,31 +268,60 @@ exports.default = Vector;
 Object.defineProperty(exports, "__esModule", { value: true });
 const N = 1;
 const SEGMENT_SIZE = 2 * 3 * 2;
-function setUpExampleData(data) {
+const SEGMENT_DATA_SIZE = 4 * 2;
+function setUpExampleData(map) {
     console.assert(N === 1, "invalid number of segments");
     let i = 0;
+    let data = new Float32Array(4 * 2);
     data[i++] = -0.8;
     data[i++] = -0.5;
     data[i++] = 0.2;
     data[i++] = -0.5;
+    data[i++] = 0.5;
+    data[i++] = 0.5;
     data[i++] = -0.5;
     data[i++] = 0.5;
-    data[i++] = 0.5;
-    data[i++] = 0.5;
-    data[i++] = -0.5;
-    data[i++] = 0.5;
-    data[i++] = 0.2;
-    data[i++] = -0.5;
+    for (i = 0; i < 4; i++) {
+        map.updatePoint(0, i, data);
+    }
 }
 class Map {
     constructor() {
         this.data = new Float32Array(SEGMENT_SIZE * N);
-        setUpExampleData(this.data);
+        this.version = 0;
+        setUpExampleData(this);
     }
     numTriangles() {
         return 2 * N;
     }
-    update(data) {
+    updateSegment(segmentIndex, data) {
+        console.assert(data.length === SEGMENT_DATA_SIZE, "Invalid segment data.");
+        console.assert(0 <= segmentIndex && segmentIndex < N, "Index out of bounds. (updateSegment)");
+        let offset = segmentIndex * SEGMENT_SIZE;
+        let i;
+        for (i = 0; i < 3; i++) {
+            this.updatePoint(offset, i, data);
+        }
+        for (i = 2; i <= 4; i++) {
+            this.updatePoint(offset, i % 4, data);
+        }
+        this.version++;
+    }
+    updatePoint(segment, pointIndex, data) {
+        let offset;
+        if (pointIndex % 2 === 0) {
+            offset = 2 * pointIndex;
+            this.data[offset] = data[2 * pointIndex];
+            this.data[offset + 1] = data[2 * pointIndex + 1];
+            offset = pointIndex + 6;
+            this.data[offset] = data[2 * pointIndex];
+            this.data[offset + 1] = data[2 * pointIndex + 1];
+        }
+        else {
+            offset = 4 * pointIndex - 2;
+            this.data[offset] = data[2 * pointIndex];
+            this.data[offset + 1] = data[2 * pointIndex + 1];
+        }
     }
 }
 exports.default = Map;
@@ -445,6 +474,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(9);
 const Color_1 = __webpack_require__(10);
 var data = null;
+var bufferVersion = -1;
 var gl = null;
 var buffer = null;
 var program = null;
@@ -465,10 +495,15 @@ function init(_gl) {
 exports.init = init;
 function setModelMap(map) {
     data = map;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data.data, gl.STATIC_DRAW);
+    bufferVersion = -1;
+    updateBuffer();
 }
 exports.setModelMap = setModelMap;
+function updateBuffer() {
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, data.data, gl.STREAM_DRAW);
+    bufferVersion = data.version;
+}
 function draw(proj) {
     bgColor.setClearColor(gl);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -481,6 +516,9 @@ function draw(proj) {
     proj.uniform(gl, uniformPM);
     gl.uniform1f(uniformZ, 0.5);
     gl.drawArrays(gl.TRIANGLES, 0, 3 * data.numTriangles());
+    if (bufferVersion < data.version) {
+        setTimeout(updateBuffer, 0);
+    }
 }
 exports.draw = draw;
 
@@ -543,6 +581,13 @@ class Color {
     }
     setClearColor(gl) {
         gl.clearColor(this.red, this.green, this.blue, this.alpha);
+    }
+    static interpolate(a, b, x, result) {
+        let xb = 1.0 - x;
+        result.red = x * a.red + xb * b.red;
+        result.green = x * a.green + xb * b.green;
+        result.blue = x * a.blue + xb * b.blue;
+        result.alpha = x * a.alpha + xb * b.alpha;
     }
 }
 exports.default = Color;
