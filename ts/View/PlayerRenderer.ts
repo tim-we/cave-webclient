@@ -5,7 +5,7 @@ import Color from "./Color";
 import Player from "../Model/Player";
 import Matrix from "../Model/Matrix";
 
-const RADIUS: number = 0.05;
+const RADIUS: number = 0.04;
 
 var gl: WebGLRenderingContext = null;
 var buffer: WebGLBuffer = null;

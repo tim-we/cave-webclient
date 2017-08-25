@@ -155,8 +155,8 @@ window.addEventListener("load", () => {
 });
 function mainloop() {
     if (model) {
-        View.draw();
         model.update();
+        View.startDrawLoop();
     }
 }
 function test() {
@@ -409,6 +409,7 @@ exports.default = Map;
 Object.defineProperty(exports, "__esModule", { value: true });
 const Renderer = __webpack_require__(8);
 var canvas;
+var drawAgain = false;
 function init(model) {
     canvas = document.getElementById("game");
     canvas.width = window.innerWidth;
@@ -425,10 +426,15 @@ function init(model) {
     });
 }
 exports.init = init;
+function startDrawLoop() {
+    drawAgain = true;
+    draw();
+}
+exports.startDrawLoop = startDrawLoop;
 function draw() {
     Renderer.draw();
+    window.requestAnimationFrame(draw);
 }
-exports.draw = draw;
 
 
 /***/ }),
@@ -481,6 +487,7 @@ function resize(width, height) {
     else {
         projMatrix.makeScale(1.0, width / height, 1.0, false);
     }
+    gl.viewport(0, 0, width, height);
 }
 exports.resize = resize;
 
@@ -619,7 +626,7 @@ module.exports = "precision mediump float;\r\n\r\n//varying vec4 color;\r\n\r\nv
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(0);
 const Color_1 = __webpack_require__(1);
-const RADIUS = 0.05;
+const RADIUS = 0.04;
 var gl = null;
 var buffer = null;
 var program = null;

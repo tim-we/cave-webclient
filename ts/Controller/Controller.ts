@@ -18,9 +18,9 @@ window.addEventListener("load", () => {
 
 function mainloop() {
 	if (model) {
-		View.draw();
-
 		model.update();
+
+		View.startDrawLoop();
 	}
 }
 

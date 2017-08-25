@@ -2,6 +2,7 @@ import Model from "../Model/Model";
 import * as Renderer from "./Renderer";
 
 var canvas: HTMLCanvasElement;
+var drawAgain: boolean = false;
 
 export function init(model:Model) {
 	canvas = <HTMLCanvasElement>document.getElementById("game");
@@ -23,10 +24,14 @@ export function init(model:Model) {
 	});
 }
 
-export function draw(): void {
+export function startDrawLoop() {
+	drawAgain = true;
 
-	
+	draw();
+}
+
+function draw(): void {
 	Renderer.draw();
 
-	//window.requestAnimationFrame(draw);
+	window.requestAnimationFrame(draw);
 }
