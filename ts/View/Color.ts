@@ -21,11 +21,11 @@ export default class Color {
 	}
 
 	public static interpolate(a: Color, b: Color, x: number, result:Color) {
-		let xb: number = 1.0 - x;
+		let xa: number = 1.0 - x;
 
-		result.red = x * a.red + xb * b.red;
-		result.green = x * a.green + xb * b.green;
-		result.blue = x * a.blue + xb * b.blue;
-		result.alpha = x * a.alpha + xb * b.alpha;
+		result.red   = xa * a.red   + x * b.red;
+		result.green = xa * a.green + x * b.green;
+		result.blue  = xa * a.blue  + x * b.blue;
+		result.alpha = xa * a.alpha + x * b.alpha;
 	}
 }

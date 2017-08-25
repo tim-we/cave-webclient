@@ -10,7 +10,8 @@ const RADIUS: number = 0.04;
 var gl: WebGLRenderingContext = null;
 var buffer: WebGLBuffer = null;
 var program: WebGLProgram = null;
-var vertexAttrib: number = -1;
+var vertexAttribPos: number = -1;
+var vertexAttribCSQ: number = -1;
 
 var color: Color = new Color(1.0, 1.0, 1.0);
 
@@ -34,8 +35,10 @@ export function init(_gl: WebGLRenderingContext) {
 			require("../../shader/player.frag")
 		);
 	
-		vertexAttrib = gl.getAttribLocation(program, "vertexData");
-		gl.enableVertexAttribArray(vertexAttrib);
+		vertexAttribPos = gl.getAttribLocation(program, "vPosition");
+		gl.enableVertexAttribArray(vertexAttribPos);
+		vertexAttribCSQ = gl.getAttribLocation(program, "csqPosition");
+		gl.enableVertexAttribArray(vertexAttribCSQ);
 		
 		uniformColor = gl.getUniformLocation(program, "pColor");
 		uniformPM = gl.getUniformLocation(program, "uPMatrix");
@@ -57,17 +60,19 @@ function setUpBuffer(player: Player) {
 	data[8] = x + RADIUS; data[9] = y - RADIUS;
 	data[12] = x + RADIUS; data[13] = y + RADIUS;
 
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.bufferData(gl.ARRAY_BUFFER, data, gl.STREAM_DRAW);
 }
 
 export function draw(proj:Matrix, player:Player) {
 	gl.useProgram(program);
-	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-	gl.vertexAttribPointer(vertexAttrib, 4, gl.FLOAT, false, 0, 0);
+	
+	setUpBuffer(player);
+	
+	gl.vertexAttribPointer(vertexAttribPos, 2, gl.FLOAT, false, 4 * 4, 0);
+	gl.vertexAttribPointer(vertexAttribCSQ, 2, gl.FLOAT, false, 4 * 4, 2 * 4);
 	gl.enable(gl.BLEND);
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-	setUpBuffer(player);
 
 	proj.uniform(gl, uniformPM);
 	gl.uniform1f(uniformZ, player.Z);

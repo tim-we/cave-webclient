@@ -126,11 +126,11 @@ class Color {
         gl.uniform4f(location, this.red, this.green, this.blue, this.alpha);
     }
     static interpolate(a, b, x, result) {
-        let xb = 1.0 - x;
-        result.red = x * a.red + xb * b.red;
-        result.green = x * a.green + xb * b.green;
-        result.blue = x * a.blue + xb * b.blue;
-        result.alpha = x * a.alpha + xb * b.alpha;
+        let xa = 1.0 - x;
+        result.red = xa * a.red + x * b.red;
+        result.green = xa * a.green + x * b.green;
+        result.blue = xa * a.blue + x * b.blue;
+        result.alpha = xa * a.alpha + x * b.alpha;
     }
 }
 exports.default = Color;
@@ -630,7 +630,8 @@ const RADIUS = 0.04;
 var gl = null;
 var buffer = null;
 var program = null;
-var vertexAttrib = -1;
+var vertexAttribPos = -1;
+var vertexAttribCSQ = -1;
 var color = new Color_1.default(1.0, 1.0, 1.0);
 var uniformColor = null;
 var uniformPM = null;
@@ -640,8 +641,10 @@ function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
     program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(14), __webpack_require__(15));
-    vertexAttrib = gl.getAttribLocation(program, "vertexData");
-    gl.enableVertexAttribArray(vertexAttrib);
+    vertexAttribPos = gl.getAttribLocation(program, "vPosition");
+    gl.enableVertexAttribArray(vertexAttribPos);
+    vertexAttribCSQ = gl.getAttribLocation(program, "csqPosition");
+    gl.enableVertexAttribArray(vertexAttribCSQ);
     uniformColor = gl.getUniformLocation(program, "pColor");
     uniformPM = gl.getUniformLocation(program, "uPMatrix");
     uniformZ = gl.getUniformLocation(program, "zPos");
@@ -666,15 +669,16 @@ function setUpBuffer(player) {
     data[9] = y - RADIUS;
     data[12] = x + RADIUS;
     data[13] = y + RADIUS;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STREAM_DRAW);
 }
 function draw(proj, player) {
     gl.useProgram(program);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.vertexAttribPointer(vertexAttrib, 4, gl.FLOAT, false, 0, 0);
+    setUpBuffer(player);
+    gl.vertexAttribPointer(vertexAttribPos, 2, gl.FLOAT, false, 4 * 4, 0);
+    gl.vertexAttribPointer(vertexAttribCSQ, 2, gl.FLOAT, false, 4 * 4, 2 * 4);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    setUpBuffer(player);
     proj.uniform(gl, uniformPM);
     gl.uniform1f(uniformZ, player.Z);
     color.setUniform(gl, uniformColor);
@@ -688,13 +692,13 @@ exports.draw = draw;
 /* 14 */
 /***/ (function(module, exports) {
 
-module.exports = "//attribute vec2 vPosition;\r\n//attribute vec2 csqPosition; // circle square position (one of the corners)\r\nattribute vec4 vertexData; // position + csq\r\n\r\nuniform float zPos;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvarying vec2 cPos;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vertexData.x, vertexData.y, zPos, 1.0);\r\n\r\n\tcPos = vertexData.zw;\r\n}"
+module.exports = "attribute vec2 vPosition;\r\nattribute vec2 csqPosition; // circle square position (one of the corners)\r\n\r\nuniform float zPos;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvarying vec2 cPos;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n\r\n\tcPos = csqPosition;\r\n}"
 
 /***/ }),
 /* 15 */
 /***/ (function(module, exports) {
 
-module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor;\r\n\r\nvarying vec2 cPos;\r\n\r\nconst vec4 OUTSIDE = vec4(0.0, 0.0, 0.0, 0.0);\r\nconst vec4 BORDER = vec4(0.5,0.5,0.5,0.5);\r\n\r\nvoid main(void) {\r\n\t\r\n\tfloat d = dot(cPos,cPos);\r\n\r\n\tif(d > 1.0) {\r\n\t\tgl_FragColor = OUTSIDE;\r\n\t} else if(d > 0.9) {\r\n\t\tgl_FragColor = BORDER;\r\n\t} else {\r\n\t\tgl_FragColor = pColor; // inside\r\n\t}\r\n}"
+module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying vec2 cPos;\r\n\r\n// slightly darkened edge\r\nconst vec4 OUTSIDE = vec4(0.0, 0.0, 0.0, 0.0);\r\n\r\nvoid main(void) {\r\n\t\r\n\tfloat d = dot(cPos,cPos);\r\n\r\n\tif(d > 1.0) {\r\n\t\tgl_FragColor = OUTSIDE;\r\n\t} else if(d > 0.9) { // border\r\n\t\tfloat a = 10.0 * (1.0 - d);\r\n\t\tgl_FragColor = mix(OUTSIDE, pColor, a);\r\n\t} else {\r\n\t\tgl_FragColor = pColor; // inside\r\n\t}\r\n}"
 
 /***/ }),
 /* 16 */
