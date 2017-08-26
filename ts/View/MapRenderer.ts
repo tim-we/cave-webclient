@@ -29,14 +29,13 @@ export function init(_gl:WebGLRenderingContext) {
 			require("../../shader/map.vert"),
 			require("../../shader/map.frag")
 		);
-
+	
+		gl.useProgram(program);
+	
 		vertexPosAttrib = gl.getAttribLocation(program, "vPosition");
-		gl.enableVertexAttribArray(vertexPosAttrib);
 
 		uniformPM = gl.getUniformLocation(program, "uPMatrix");
 		uniformZ = gl.getUniformLocation(program, "zPos");
-	
-	//gl.useProgram(program);
 }
 
 export function setModelMap(map:Map) {
@@ -55,15 +54,15 @@ function updateBuffer() {
 export function draw(proj:Matrix): void {
 	// background color
 	bgColor.setClearColor(gl);
-	//gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
 	// do we have data to draw?
 	if (!data) { return; }
 
 	gl.useProgram(program);
+	gl.enableVertexAttribArray(vertexPosAttrib);
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-	// do we have to do this for every frame?
 	gl.vertexAttribPointer(vertexPosAttrib, 2, gl.FLOAT, false, 0, 0);
 
 	// send projection matrix to GPU

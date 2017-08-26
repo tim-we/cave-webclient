@@ -15,7 +15,7 @@ export default class Model {
 
 	public Map: Map;
 
-	public Rotation: number;
+	public Rotation: number = 0.1 * Math.PI;
 
 	private userInput: boolean = false;
 	public onUserInputChange: (pressed: boolean) => void = () => { };

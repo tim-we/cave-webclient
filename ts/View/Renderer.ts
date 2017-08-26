@@ -1,20 +1,22 @@
-//import { createProgramFromSource } from "./ShaderTools";
 import Model from "../Model/Model";
 import Matrix from "../Model/Matrix";
 
 import * as MapRenderer from "./MapRenderer";
 import * as PlayerRenderer from "./PlayerRenderer";
 
-//declare function require(name: string): any;
+//declare var WebGLDebugUtils;
 
 var gl: WebGLRenderingContext = null;
 var model: Model = null;
 
 var projMatrix: Matrix = new Matrix();
+var rotationMatrix: Matrix = new Matrix();
+var transformMatrix: Matrix = new Matrix();
 
 export function init(canvas: HTMLCanvasElement):void {
 	try {
 		gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+		//gl = WebGLDebugUtils.makeDebugContext(canvas.getContext("webgl"));
 	} catch (e) {
 		console.warn("Error initializing webgl.");
 		return;
@@ -40,19 +42,13 @@ export function setModel(m: Model) {
 export function draw() {
 	if (model === null) { return; }
 	
-	MapRenderer.draw(projMatrix);
-	
-	model.Players.forEach(player => { PlayerRenderer.draw(projMatrix, player); });
+	updateTransformation();
 
-	//gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-	//setMatrixUniforms();
-	//gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+	gl.clear(gl.COLOR_BUFFER_BIT);
+
+	MapRenderer.draw(transformMatrix);
 	
-	/* draw the tail:
-	 * var buffer = gl.createBuffer();
-	 * gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-	 * gl.bufferData(gl.ARRAY_BUFFER, player.Tail.buffer, gl.STATIC_DRAW);
-	 */
+	model.Players.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
 }
 
 export function resize(width:number, height:number): void {
@@ -65,4 +61,10 @@ export function resize(width:number, height:number): void {
 	}
 
 	gl.viewport(0, 0, width, height);
+}
+
+function updateTransformation(): void {
+	// assume model != null
+	rotationMatrix.makeZRotation(model.Rotation);
+	Matrix.multiply(projMatrix, rotationMatrix, transformMatrix);
 }

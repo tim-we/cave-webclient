@@ -20,18 +20,23 @@ export function init(model:Model) {
 		canvas.height = h;
 
 		Renderer.resize(w, h);
-		Renderer.draw();
+		if (!drawAgain) { Renderer.draw(); }
 	});
 }
 
-export function startDrawLoop() {
-	drawAgain = true;
-
+export function startDrawLoop(drawLoop:boolean = true) {
+	drawAgain = drawLoop;
 	draw();
+}
+
+export function stopDrawLoop() {
+	drawAgain = false;
 }
 
 function draw(): void {
 	Renderer.draw();
 
-	window.requestAnimationFrame(draw);
+	if (drawAgain) {
+		window.requestAnimationFrame(draw);
+	}
 }

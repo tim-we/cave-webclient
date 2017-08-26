@@ -20,7 +20,8 @@ function mainloop() {
 	if (model) {
 		model.update();
 
-		View.startDrawLoop();
+		View.startDrawLoop(false);
+		//View.stopDrawLoop();
 	}
 }
 

@@ -25,7 +25,7 @@ export function init(_gl: WebGLRenderingContext) {
 	gl = _gl;
 
 	// set up buffers
-		buffer = gl.createBuffer();
+	buffer = gl.createBuffer();
 		// TODO: create tail buffer
 	
 	// program
@@ -34,11 +34,11 @@ export function init(_gl: WebGLRenderingContext) {
 			require("../../shader/player.vert"),
 			require("../../shader/player.frag")
 		);
+		
+		gl.useProgram(program);
 	
 		vertexAttribPos = gl.getAttribLocation(program, "vPosition");
-		gl.enableVertexAttribArray(vertexAttribPos);
 		vertexAttribCSQ = gl.getAttribLocation(program, "csqPosition");
-		gl.enableVertexAttribArray(vertexAttribCSQ);
 		
 		uniformColor = gl.getUniformLocation(program, "pColor");
 		uniformPM = gl.getUniformLocation(program, "uPMatrix");
@@ -69,6 +69,10 @@ export function draw(proj:Matrix, player:Player) {
 	
 	setUpBuffer(player);
 	
+	// needs to be done for every webgl program switch
+	gl.enableVertexAttribArray(vertexAttribPos);
+	gl.enableVertexAttribArray(vertexAttribCSQ);
+
 	gl.vertexAttribPointer(vertexAttribPos, 2, gl.FLOAT, false, 4 * 4, 0);
 	gl.vertexAttribPointer(vertexAttribCSQ, 2, gl.FLOAT, false, 4 * 4, 2 * 4);
 	gl.enable(gl.BLEND);

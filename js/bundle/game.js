@@ -156,7 +156,7 @@ window.addEventListener("load", () => {
 function mainloop() {
     if (model) {
         model.update();
-        View.startDrawLoop();
+        View.startDrawLoop(false);
     }
 }
 function test() {
@@ -185,6 +185,7 @@ const Player_1 = __webpack_require__(4);
 const Map_1 = __webpack_require__(6);
 class Model {
     constructor(data) {
+        this.Rotation = 0.1 * Math.PI;
         this.userInput = false;
         this.onUserInputChange = () => { };
         let n = data.n;
@@ -263,7 +264,7 @@ class Player {
         this.PDelta = new Vector_1.default(0, 0);
         this.PDeltaLength = 0;
         this.Alive = true;
-        this.Tail = new Float32Array(exports.TAILLENGTH * 3);
+        this.Tail = new Float32Array(exports.TAILLENGTH * 2);
     }
     updateData(px, py, alive) {
         this.PDelta.diff2d(px, py);
@@ -272,10 +273,9 @@ class Player {
     }
     move(a) {
         Vector_1.default.axpy(a, this.PDelta, this.Position);
-        typedArrayUnshift(this.Tail, 3);
+        typedArrayUnshift(this.Tail, 2);
         this.Tail[0] = this.Position.getX();
         this.Tail[1] = this.Position.getY();
-        this.Tail[2] = this.Z;
     }
 }
 exports.default = Player;
@@ -422,18 +422,26 @@ function init(model) {
         canvas.width = w;
         canvas.height = h;
         Renderer.resize(w, h);
-        Renderer.draw();
+        if (!drawAgain) {
+            Renderer.draw();
+        }
     });
 }
 exports.init = init;
-function startDrawLoop() {
-    drawAgain = true;
+function startDrawLoop(drawLoop = true) {
+    drawAgain = drawLoop;
     draw();
 }
 exports.startDrawLoop = startDrawLoop;
+function stopDrawLoop() {
+    drawAgain = false;
+}
+exports.stopDrawLoop = stopDrawLoop;
 function draw() {
     Renderer.draw();
-    window.requestAnimationFrame(draw);
+    if (drawAgain) {
+        window.requestAnimationFrame(draw);
+    }
 }
 
 
@@ -450,6 +458,8 @@ const PlayerRenderer = __webpack_require__(13);
 var gl = null;
 var model = null;
 var projMatrix = new Matrix_1.default();
+var rotationMatrix = new Matrix_1.default();
+var transformMatrix = new Matrix_1.default();
 function init(canvas) {
     try {
         gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
@@ -476,8 +486,10 @@ function draw() {
     if (model === null) {
         return;
     }
-    MapRenderer.draw(projMatrix);
-    model.Players.forEach(player => { PlayerRenderer.draw(projMatrix, player); });
+    updateTransformation();
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    MapRenderer.draw(transformMatrix);
+    model.Players.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
 }
 exports.draw = draw;
 function resize(width, height) {
@@ -490,6 +502,10 @@ function resize(width, height) {
     gl.viewport(0, 0, width, height);
 }
 exports.resize = resize;
+function updateTransformation() {
+    rotationMatrix.makeZRotation(model.Rotation);
+    Matrix_1.default.multiply(projMatrix, rotationMatrix, transformMatrix);
+}
 
 
 /***/ }),
@@ -506,6 +522,9 @@ class Matrix {
     }
     setEntry(row, column, value) {
         this.data[row + 4 * column] = value;
+    }
+    getEntry(row, column) {
+        return this.data[row + 4 * column];
     }
     makeZero() {
         for (let i = 0; i < this.data.length; i++) {
@@ -529,6 +548,30 @@ class Matrix {
         this.setEntry(2, 2, z);
         this.setEntry(3, 3, 1);
     }
+    makeZRotation(alpha, reset = false) {
+        let c = Math.cos(alpha);
+        let s = Math.sin(alpha);
+        if (reset) {
+            this.makeZero();
+            this.setEntry(2, 2, 1.0);
+            this.setEntry(3, 3, 1.0);
+        }
+        this.setEntry(0, 0, c);
+        this.setEntry(1, 1, c);
+        this.setEntry(0, 1, -s);
+        this.setEntry(1, 0, s);
+    }
+    makeFrustum(width, height, znear, zfar, zero = false) {
+        let div = 1.0 / (znear - zfar);
+        if (zero) {
+            this.makeZero();
+        }
+        this.setEntry(0, 0, 2.0 * znear / width);
+        this.setEntry(1, 1, 2.0 * znear / height);
+        this.setEntry(2, 2, (zfar + znear) * div);
+        this.setEntry(2, 3, 2.0 * zfar * znear * div);
+        this.setEntry(3, 2, -1.0);
+    }
     scale(x, y, z) {
         for (let i = 0; i < 4; i++) {
             this.data[i] *= x;
@@ -538,6 +581,19 @@ class Matrix {
         }
         for (let i = 8; i < 16; i++) {
             this.data[i] *= z;
+        }
+    }
+    static multiply(a, b, result) {
+        let i, j, k;
+        let sum;
+        for (i = 0; i < 4; i++) {
+            for (j = 0; j < 4; j++) {
+                sum = 0.0;
+                for (k = 0; k < 4; k++) {
+                    sum += a.getEntry(i, k) * b.getEntry(k, j);
+                }
+                result.setEntry(i, j, sum);
+            }
         }
     }
     uniform(gl, location) {
@@ -569,8 +625,8 @@ function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
     program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(11), __webpack_require__(12));
+    gl.useProgram(program);
     vertexPosAttrib = gl.getAttribLocation(program, "vPosition");
-    gl.enableVertexAttribArray(vertexPosAttrib);
     uniformPM = gl.getUniformLocation(program, "uPMatrix");
     uniformZ = gl.getUniformLocation(program, "zPos");
 }
@@ -593,6 +649,7 @@ function draw(proj) {
         return;
     }
     gl.useProgram(program);
+    gl.enableVertexAttribArray(vertexPosAttrib);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.vertexAttribPointer(vertexPosAttrib, 2, gl.FLOAT, false, 0, 0);
     proj.uniform(gl, uniformPM);
@@ -641,10 +698,9 @@ function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
     program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(14), __webpack_require__(15));
+    gl.useProgram(program);
     vertexAttribPos = gl.getAttribLocation(program, "vPosition");
-    gl.enableVertexAttribArray(vertexAttribPos);
     vertexAttribCSQ = gl.getAttribLocation(program, "csqPosition");
-    gl.enableVertexAttribArray(vertexAttribCSQ);
     uniformColor = gl.getUniformLocation(program, "pColor");
     uniformPM = gl.getUniformLocation(program, "uPMatrix");
     uniformZ = gl.getUniformLocation(program, "zPos");
@@ -675,6 +731,8 @@ function setUpBuffer(player) {
 function draw(proj, player) {
     gl.useProgram(program);
     setUpBuffer(player);
+    gl.enableVertexAttribArray(vertexAttribPos);
+    gl.enableVertexAttribArray(vertexAttribCSQ);
     gl.vertexAttribPointer(vertexAttribPos, 2, gl.FLOAT, false, 4 * 4, 0);
     gl.vertexAttribPointer(vertexAttribCSQ, 2, gl.FLOAT, false, 4 * 4, 2 * 4);
     gl.enable(gl.BLEND);

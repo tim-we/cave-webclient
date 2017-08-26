@@ -22,7 +22,7 @@ export default class Player {
 		this.PDelta = new Vector(0, 0);
 		this.PDeltaLength = 0;
 		this.Alive = true;
-		this.Tail = new Float32Array(TAILLENGTH * 3);
+		this.Tail = new Float32Array(TAILLENGTH * 2);
 	}
 
 	public updateData(px: number, py: number, alive:boolean): void {
@@ -37,10 +37,9 @@ export default class Player {
 		Vector.axpy(a, this.PDelta, this.Position);
 
 		// update tail
-		typedArrayUnshift(this.Tail, 3);
+		typedArrayUnshift(this.Tail, 2);
 		this.Tail[0] = this.Position.getX();
 		this.Tail[1] = this.Position.getY();
-		this.Tail[2] = this.Z;
 	}
 
 }
