@@ -37,4 +37,8 @@ export default class Vector {
 		return dx * dx + dy * dy;
 	}
 
+	public toString(): string {
+		return "(" + this.data[0] + "," + this.data[1] + ")";
+	}
+
 }

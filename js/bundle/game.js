@@ -146,21 +146,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Model_1 = __webpack_require__(3);
 const View = __webpack_require__(7);
 const LocalTestServer_1 = __webpack_require__(16);
-var connection = null;
+var connection = new LocalTestServer_1.default(serverUpdateHandler);
 var model = null;
 window.addEventListener("load", () => {
     test();
-    View.init(model);
+    View.init(model, mainloop);
     mainloop();
+    View.startDrawLoop();
 });
 function mainloop() {
     if (model) {
         model.update();
-        View.startDrawLoop(false);
+    }
+}
+function serverUpdateHandler(data) {
+    if (model) {
+        model.updateData(data);
     }
 }
 function test() {
-    connection = new LocalTestServer_1.default();
+    connection.connect();
     model = new Model_1.default({
         type: 0,
         n: 1,
@@ -193,7 +198,9 @@ class Model {
         console.assert(data.names.length === n);
         console.assert(data.t < 0);
         this.Time = data.t;
+        this.NextTime = data.t;
         this.TimeDelta = 0.0;
+        this.LastUpdate = performance.now();
         this.Players = new Array(n);
         let z = 1.0;
         for (let i = 0; i < n; i++) {
@@ -225,6 +232,7 @@ class Model {
             let pos = data.ps[i];
             p.updateData(pos.x, pos.y, data.as[i]);
         });
+        this.Rotation = data.r;
     }
     update() {
         if (this.TimeDelta <= 0.0) {
@@ -328,6 +336,9 @@ class Vector {
         let dy = a.data[1] - b.data[1];
         return dx * dx + dy * dy;
     }
+    toString() {
+        return "(" + this.data[0] + "," + this.data[1] + ")";
+    }
 }
 exports.default = Vector;
 
@@ -410,10 +421,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Renderer = __webpack_require__(8);
 var canvas;
 var drawAgain = false;
-function init(model) {
+var afterDraw;
+function init(model, afterDrawHook) {
     canvas = document.getElementById("game");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    afterDraw = afterDrawHook;
     Renderer.init(canvas);
     Renderer.setModel(model);
     window.addEventListener("resize", function () {
@@ -442,6 +455,7 @@ function draw() {
     if (drawAgain) {
         window.requestAnimationFrame(draw);
     }
+    afterDraw();
 }
 
 
@@ -765,15 +779,32 @@ module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; /
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const UPDATE_RATE = 20;
 class LocalTestServer {
-    constructor() {
+    constructor(updateHandler) {
         this.connected = false;
+        this.Rotation = 0.0;
+        this.updateHandler = updateHandler;
+        this.RoundStart = Date.now() + 3;
     }
     connect() {
         this.connected = true;
+        let _this = this;
+        this.updateInterval = setInterval(() => {
+            let time = Date.now() - _this.RoundStart;
+            _this.Rotation += 0.01;
+            _this.updateHandler({
+                type: 1,
+                t: time,
+                ps: [{ x: 0.0, y: 0.08 * Math.sin(0.005 * time) }],
+                as: [true],
+                r: _this.Rotation
+            });
+        }, UPDATE_RATE);
     }
     disconnect() {
         this.connected = false;
+        clearInterval(this.updateInterval);
     }
     isConnected() {
         return this.connected;

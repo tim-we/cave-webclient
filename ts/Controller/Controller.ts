@@ -4,29 +4,35 @@ import { Connection } from "./IConnection";
 
 import Server from "./Server";
 import LocalTestServer from "./LocalTestServer";
+import { ServerGameMessage } from "./ICommunication";
 
-var connection: Connection = null;
+var connection: Connection = new LocalTestServer(serverUpdateHandler);
 var model: Model = null;
 
 window.addEventListener("load", () => {
 	test();
 	
-	View.init(model);
+	View.init(model, mainloop);
 
 	mainloop();
+
+	View.startDrawLoop();
 });
 
 function mainloop() {
 	if (model) {
 		model.update();
+	}
+}
 
-		View.startDrawLoop(false);
-		//View.stopDrawLoop();
+function serverUpdateHandler(data:ServerGameMessage):void {
+	if (model) {
+		model.updateData(data);
 	}
 }
 
 function test() {
-	connection = new LocalTestServer();
+	connection.connect();
 
 	model = new Model({
 		type: 0,

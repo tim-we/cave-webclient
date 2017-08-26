@@ -3,11 +3,14 @@ import * as Renderer from "./Renderer";
 
 var canvas: HTMLCanvasElement;
 var drawAgain: boolean = false;
+var afterDraw: () => void;
 
-export function init(model:Model) {
+export function init(model:Model, afterDrawHook:() => void) {
 	canvas = <HTMLCanvasElement>document.getElementById("game");
 	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;
+
+	afterDraw = afterDrawHook;
 
 	Renderer.init(canvas);
 	Renderer.setModel(model);
@@ -39,4 +42,6 @@ function draw(): void {
 	if (drawAgain) {
 		window.requestAnimationFrame(draw);
 	}
+
+	afterDraw();
 }

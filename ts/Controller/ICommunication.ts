@@ -22,4 +22,5 @@ export interface ServerGameMessage {
 	t: number; // time
 	ps: SVector[]; // positions
 	as: boolean[]; // alive status (true => alive)
+	r: number; // rotation
 }

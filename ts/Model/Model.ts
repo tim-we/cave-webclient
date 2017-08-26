@@ -30,7 +30,9 @@ export default class Model {
 
 		// set up timestamps
 		this.Time = data.t;
+		this.NextTime = data.t;
 		this.TimeDelta = 0.0;
+		this.LastUpdate = performance.now();
 
 		// create player objects
 		this.Players = new Array(n);
@@ -76,6 +78,8 @@ export default class Model {
 			let pos = data.ps[i];
 			p.updateData(pos.x, pos.y, data.as[i]);
 		});
+
+		this.Rotation = data.r; // TODO: interpolate
 	}
 
 	public update(): void {
@@ -93,10 +97,9 @@ export default class Model {
 		let t: number = d / this.TimeDelta;
 		t = Math.max(Math.min(t, 2.0), 0.0);
 
-		// move players, collision-detection on server
+		// move players (collision-detection on server)
 		this.Players.forEach(p => {
 			p.move(t);
 		});
-
 	}
 }
