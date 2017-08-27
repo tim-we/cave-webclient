@@ -3,7 +3,7 @@ import { ServerGameMessage } from "./ICommunication";
 
 type ServerGameUpdateHandler = (data: ServerGameMessage) => void;
 
-const UPDATE_RATE = 30;
+const UPDATE_RATE = 200;
 
 export default class LocalTestServer implements Connection {
 

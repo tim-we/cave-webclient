@@ -25,9 +25,14 @@ export default class Vector {
 	}
 
 	// y <- a*x + y
-	public static axpy(a:number, x:Vector, y:Vector, result:Vector = y):void {
-		result.data[0] = a * x.data[0] + y.data[0];
-		result.data[1] = a * x.data[1] + y.data[1];
+	public static axpy(a:number, x:Vector, y:Vector):void {
+		y.data[0] += a * x.data[0];
+		y.data[1] += a * x.data[1];
+	}
+
+	public static axpy2(a: number, x: Vector, y: Vector, result: Vector): void {
+		result.data[0] = y.data[0] + a * x.data[0];
+		result.data[1] = y.data[1] + a * x.data[1];
 	}
 
 	public static distance2(a:Vector, b:Vector): number {

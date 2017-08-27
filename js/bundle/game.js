@@ -145,9 +145,9 @@ exports.createProgramFromSource = createProgramFromSource;
 Object.defineProperty(exports, "__esModule", { value: true });
 const Vector_1 = __webpack_require__(5);
 const Color_1 = __webpack_require__(0);
-exports.TAILLENGTH = 42;
+exports.TAILLENGTH = 100;
 const TAILNODESIZE = 2 * (2 + 1);
-const TAILWIDTH = 0.01;
+const TAILWIDTH = 0.005;
 var tmp1 = new Vector_1.default();
 var tmp2 = new Vector_1.default();
 class Player {
@@ -179,18 +179,17 @@ class Player {
         this.PreviousPosition.copyFrom(this.Position);
     }
     updateTail() {
-        tmp1.copyFrom(this.Position);
-        Vector_1.default.axpy(-1, this.PreviousPosition, tmp1);
+        Vector_1.default.axpy2(-1, this.PreviousPosition, this.Position, tmp1);
         tmp1.ortho(tmp1);
         tmp1.scale(1.0 / tmp1.length());
         shiftTailData(this.Tail);
-        let n = this.Tail.length - 1;
-        Vector_1.default.axpy(TAILWIDTH, tmp1, this.Position, tmp2);
-        this.Tail[n - 2] = tmp2.getX();
-        this.Tail[n - 1] = tmp2.getY();
-        Vector_1.default.axpy(-TAILWIDTH, tmp1, this.Position, tmp2);
-        this.Tail[n - 5] = tmp2.getX();
-        this.Tail[n - 4] = tmp2.getY();
+        let n = this.Tail.length;
+        Vector_1.default.axpy2(TAILWIDTH, tmp1, this.Position, tmp2);
+        this.Tail[n - 6] = tmp2.getX();
+        this.Tail[n - 5] = tmp2.getY();
+        Vector_1.default.axpy2(-TAILWIDTH, tmp1, this.Position, tmp2);
+        this.Tail[n - 3] = tmp2.getX();
+        this.Tail[n - 2] = tmp2.getY();
     }
     die() {
         this.Alive = false;
@@ -209,7 +208,7 @@ function shiftTailData(data) {
         data[j + 0] = data[i + 0];
         data[j + 1] = data[i + 1];
         data[j + 3] = data[i + 3];
-        data[j + 4] = data[j + 4];
+        data[j + 4] = data[i + 4];
     }
 }
 
@@ -356,9 +355,13 @@ class Vector {
     length() {
         return Math.sqrt(this.data[0] * this.data[0] + this.data[1] * this.data[1]);
     }
-    static axpy(a, x, y, result = y) {
-        result.data[0] = a * x.data[0] + y.data[0];
-        result.data[1] = a * x.data[1] + y.data[1];
+    static axpy(a, x, y) {
+        y.data[0] += a * x.data[0];
+        y.data[1] += a * x.data[1];
+    }
+    static axpy2(a, x, y, result) {
+        result.data[0] = y.data[0] + a * x.data[0];
+        result.data[1] = y.data[1] + a * x.data[1];
     }
     static distance2(a, b) {
         let dx = a.data[0] - b.data[0];
@@ -797,7 +800,7 @@ function draw(transform, player) {
     gl.enableVertexAttribArray(vertexAttribCSQ);
     gl.vertexAttribPointer(vertexAttribPos, 2, gl.FLOAT, false, 4 * 4, 0);
     gl.vertexAttribPointer(vertexAttribCSQ, 2, gl.FLOAT, false, 4 * 4, 2 * 4);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
     transform.uniform(gl, uniformPM);
     gl.uniform1f(uniformZ, player.Z);
     color.setUniform(gl, uniformColor);
@@ -886,7 +889,7 @@ module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; /
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const UPDATE_RATE = 30;
+const UPDATE_RATE = 200;
 class LocalTestServer {
     constructor(updateHandler) {
         this.connected = false;

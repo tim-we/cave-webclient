@@ -26,9 +26,10 @@ function mainloop() {
 		model.update();
 	}
 
-	/*if (tmp++ > 8) {
+	/*if (tmp++ > 6) {
 		View.stopDrawLoop();
-	}*/
+		console.log(model.Player.Tail);
+	}//*/
 }
 
 function serverUpdateHandler(data:ServerGameMessage):void {

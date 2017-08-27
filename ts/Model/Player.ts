@@ -1,9 +1,9 @@
 import Vector from "./Vector";
 import Color from "../View/Color";
 
-export const TAILLENGTH = 42;
+export const TAILLENGTH = 100;
 const TAILNODESIZE = 2 * (2 + 1);
-const TAILWIDTH = 0.01;
+const TAILWIDTH = 0.005;
 
 var tmp1: Vector = new Vector();
 var tmp2: Vector = new Vector();
@@ -64,8 +64,8 @@ export default class Player {
 	}
 
 	private updateTail() {
-		tmp1.copyFrom(this.Position);
-		Vector.axpy(-1, this.PreviousPosition, tmp1);
+		// tmp1 = this.Position - this.PreviousPosition
+		Vector.axpy2(-1, this.PreviousPosition, this.Position, tmp1);
 		tmp1.ortho(tmp1);
 		
 		tmp1.scale(1.0 / tmp1.length());
@@ -73,15 +73,17 @@ export default class Player {
 		shiftTailData(this.Tail);
 		// shift tail points (keep intensities)
 
-		let n: number = this.Tail.length - 1;
+		let n: number = this.Tail.length;
 
-		Vector.axpy(TAILWIDTH, tmp1, this.Position, tmp2);
-		this.Tail[n - 2] = tmp2.getX();
-		this.Tail[n - 1] = tmp2.getY();
+		// right point
+		Vector.axpy2(TAILWIDTH, tmp1, this.Position, tmp2);
+		this.Tail[n - 6] = tmp2.getX();
+		this.Tail[n - 5] = tmp2.getY();
 
-		Vector.axpy(-TAILWIDTH, tmp1, this.Position, tmp2);
-		this.Tail[n - 5] = tmp2.getX();
-		this.Tail[n - 4] = tmp2.getY();
+		// left point
+		Vector.axpy2(-TAILWIDTH, tmp1, this.Position, tmp2);
+		this.Tail[n - 3] = tmp2.getX();
+		this.Tail[n - 2] = tmp2.getY();
 	}
 
 	private die() {
@@ -106,6 +108,6 @@ function shiftTailData(data: Float32Array | Float64Array): void {
 		data[j + 1] = data[i + 1];
 
 		data[j + 3] = data[i + 3];
-		data[j + 4] = data[j + 4];
+		data[j + 4] = data[i + 4];
 	}
 }

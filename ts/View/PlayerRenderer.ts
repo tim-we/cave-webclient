@@ -82,7 +82,8 @@ export function draw(transform: Matrix, player: Player) {
 	gl.vertexAttribPointer(vertexAttribPos, 2, gl.FLOAT, false, 4 * 4, 0);
 	gl.vertexAttribPointer(vertexAttribCSQ, 2, gl.FLOAT, false, 4 * 4, 2 * 4);
 	
-	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	//gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // normal blending
+	gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // additive blending
 
 	transform.uniform(gl, uniformPM);
 	gl.uniform1f(uniformZ, player.Z);
