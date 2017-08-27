@@ -4,16 +4,18 @@ import { createProgramFromSource } from "./ShaderTools";
 import Color from "./Color";
 import Player from "../Model/Player";
 import Matrix from "../Model/Matrix";
+import * as TailRenderer from "./TailRenderer";
 
-const RADIUS: number = 0.04;
+const RADIUS: number = 0.05;
 
 var gl: WebGLRenderingContext = null;
 var buffer: WebGLBuffer = null;
 var program: WebGLProgram = null;
+
 var vertexAttribPos: number = -1;
 var vertexAttribCSQ: number = -1;
 
-var color: Color = new Color(1.0, 1.0, 1.0);
+var color: Color = new Color(0.0, 0.5, 1.0);
 
 var uniformColor: WebGLUniformLocation = null;
 var uniformPM: WebGLUniformLocation = null;
@@ -21,12 +23,11 @@ var uniformZ: WebGLUniformLocation = null;
 
 var data: Float32Array = new Float32Array(4 * 4);
 
-export function init(_gl: WebGLRenderingContext) {
+export function init(_gl: WebGLRenderingContext):void {
 	gl = _gl;
 
-	// set up buffers
-	buffer = gl.createBuffer();
-		// TODO: create tail buffer
+	// set up buffer
+		buffer = gl.createBuffer();
 	
 	// program
 		program = createProgramFromSource(
@@ -34,8 +35,6 @@ export function init(_gl: WebGLRenderingContext) {
 			require("../../shader/player.vert"),
 			require("../../shader/player.frag")
 		);
-		
-		gl.useProgram(program);
 	
 		vertexAttribPos = gl.getAttribLocation(program, "vPosition");
 		vertexAttribCSQ = gl.getAttribLocation(program, "csqPosition");
@@ -49,6 +48,9 @@ export function init(_gl: WebGLRenderingContext) {
 		data[6] = -1.0; data[7] = 1.0;
 		data[10] = 1.0; data[11] = -1.0;
 		data[14] = 1.0; data[15] = 1.0;
+	
+	// set up tail renderer
+	TailRenderer.init(_gl);
 }
 
 function setUpBuffer(player: Player) {
@@ -64,7 +66,11 @@ function setUpBuffer(player: Player) {
 	gl.bufferData(gl.ARRAY_BUFFER, data, gl.STREAM_DRAW);
 }
 
-export function draw(proj:Matrix, player:Player) {
+export function draw(transform: Matrix, player: Player) {
+	gl.enable(gl.BLEND);
+	
+	TailRenderer.draw(transform, player);
+
 	gl.useProgram(program);
 	
 	setUpBuffer(player);
@@ -75,10 +81,10 @@ export function draw(proj:Matrix, player:Player) {
 
 	gl.vertexAttribPointer(vertexAttribPos, 2, gl.FLOAT, false, 4 * 4, 0);
 	gl.vertexAttribPointer(vertexAttribCSQ, 2, gl.FLOAT, false, 4 * 4, 2 * 4);
-	gl.enable(gl.BLEND);
+	
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-	proj.uniform(gl, uniformPM);
+	transform.uniform(gl, uniformPM);
 	gl.uniform1f(uniformZ, player.Z);
 	color.setUniform(gl, uniformColor);
 

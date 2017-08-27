@@ -25,9 +25,9 @@ export default class Vector {
 	}
 
 	// y <- a*x + y
-	public static axpy(a:number, x:Vector, y:Vector):void {
-		y.data[0] = a * x.data[0] + y.data[0];
-		y.data[1] = a * x.data[1] + y.data[1];
+	public static axpy(a:number, x:Vector, y:Vector, result:Vector = y):void {
+		result.data[0] = a * x.data[0] + y.data[0];
+		result.data[1] = a * x.data[1] + y.data[1];
 	}
 
 	public static distance2(a:Vector, b:Vector): number {
@@ -35,6 +35,33 @@ export default class Vector {
 		let dy: number = a.data[1] - b.data[1];
 
 		return dx * dx + dy * dy;
+	}
+
+	// 90deg cw
+	public ortho(result: Vector = new Vector()): Vector {
+		let x: number = this.data[0]; // covers the case this === result
+
+		result.data[0] = this.data[1];
+		result.data[1] = -x;
+
+		return result;
+	}
+
+	public copyFrom(v: Vector): void {
+		this.data[0] = v.data[0];
+		this.data[1] = v.data[1];
+	}
+
+	public clone(): Vector {
+		return new Vector(
+			this.data[0],
+			this.data[1]
+		);
+	}
+
+	public scale(x:number): void {
+		this.data[0] *= x;
+		this.data[1] *= x;
 	}
 
 	public toString(): string {

@@ -15,7 +15,7 @@ var vertexPosAttrib: number = -1;
 var uniformPM: WebGLUniformLocation = null;
 var uniformZ: WebGLUniformLocation = null;
 
-var bgColor: Color = new Color(0.0, 1.0, 0.42);
+var bgColor: Color = new Color(0.0, 0.6, 0.05);
 
 export function init(_gl:WebGLRenderingContext) {
 	gl = _gl;
@@ -29,8 +29,6 @@ export function init(_gl:WebGLRenderingContext) {
 			require("../../shader/map.vert"),
 			require("../../shader/map.frag")
 		);
-	
-		gl.useProgram(program);
 	
 		vertexPosAttrib = gl.getAttribLocation(program, "vPosition");
 

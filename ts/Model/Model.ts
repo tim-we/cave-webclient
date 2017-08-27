@@ -6,8 +6,8 @@ export default class Model {
 
 	public Time: number; // current model time
 	private NextTime: number; // time from the latest server update
-	private TimeDelta: number;
-	private LastUpdate: number; // local timestamp
+	private TimeDelta: number; // required fr smooth model updates
+	private LastUpdate: number; // last time the update() method was called (local)
 
 	public Players: Player[];
 
@@ -85,14 +85,12 @@ export default class Model {
 	public update(): void {
 		if (this.TimeDelta <= 0.0) { return; }
 
+		// d = time since this method was called previously
 		let d: number = performance.now() - this.LastUpdate; //ms
 		this.LastUpdate = performance.now();
 
-		if (this.Time > this.NextTime) {
-			this.Time = this.NextTime;
-		} else {
-			this.Time += d;
-		}
+		// update current model time
+		this.Time = Math.min(this.Time + d, this.NextTime);
 
 		let t: number = d / this.TimeDelta;
 		t = Math.max(Math.min(t, 2.0), 0.0);

@@ -4,19 +4,23 @@ uniform mediump vec4 pColor; // inside color
 
 varying vec2 cPos;
 
-// slightly darkened edge
+const vec4 CENTER  = vec4(1.0, 1.0, 1.0, 1.0);
 const vec4 OUTSIDE = vec4(0.0, 0.0, 0.0, 0.0);
 
 void main(void) {
 	
 	float d = dot(cPos,cPos);
 
-	if(d > 1.0) {
+	if(d < 1.0) { // inside
+		float r = sqrt(d);
+
+		if(r <= 0.5) {
+			gl_FragColor = mix(CENTER, pColor, 2.0 * r);
+		} else {
+			//gl_FragColor = mix(pColor, OUTSIDE, 2.0 * r - 1.0);
+			gl_FragColor = vec4(pColor.rgb, 2.0 - 2.0 * r);
+		}
+	} else { // outside
 		gl_FragColor = OUTSIDE;
-	} else if(d > 0.9) { // border
-		float a = 10.0 * (1.0 - d);
-		gl_FragColor = mix(OUTSIDE, pColor, a);
-	} else {
-		gl_FragColor = pColor; // inside
 	}
 }

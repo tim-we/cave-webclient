@@ -9,6 +9,8 @@ import { ServerGameMessage } from "./ICommunication";
 var connection: Connection = new LocalTestServer(serverUpdateHandler);
 var model: Model = null;
 
+var tmp: number = 0;
+
 window.addEventListener("load", () => {
 	test();
 	
@@ -23,6 +25,10 @@ function mainloop() {
 	if (model) {
 		model.update();
 	}
+
+	/*if (tmp++ > 8) {
+		View.stopDrawLoop();
+	}*/
 }
 
 function serverUpdateHandler(data:ServerGameMessage):void {
