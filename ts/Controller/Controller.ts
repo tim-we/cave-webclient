@@ -2,6 +2,8 @@ import Model from "../Model/Model";
 import * as View from "../View/View";
 import { Connection } from "./IConnection";
 
+import * as UserInput from "./UserInput";
+
 import Server from "./Server";
 import LocalTestServer from "./LocalTestServer";
 import { ServerGameMessage } from "./ICommunication";
@@ -24,6 +26,10 @@ window.addEventListener("load", () => {
 function mainloop() {
 	if (model) {
 		model.update();
+
+		if (model.Player.Alive) {
+			model.Player.Force = UserInput.isPressed();
+		}
 	}
 
 	/*if (tmp++ > 42) {

@@ -74,7 +74,7 @@ const Vector_1 = __webpack_require__(1);
 const Color_1 = __webpack_require__(2);
 exports.TAILLENGTH = 80;
 const TAILNODESIZE = 2 * (2 + 1);
-const TAILWIDTH = 0.005;
+const TAILWIDTH = 0.006;
 var tmp1 = new Vector_1.default();
 var tmp2 = new Vector_1.default();
 class AbstractPlayer {
@@ -272,6 +272,7 @@ exports.createProgramFromSource = createProgramFromSource;
 Object.defineProperty(exports, "__esModule", { value: true });
 const Model_1 = __webpack_require__(5);
 const View = __webpack_require__(9);
+const UserInput = __webpack_require__(22);
 const LocalTestServer_1 = __webpack_require__(21);
 var connection = new LocalTestServer_1.default(serverUpdateHandler);
 var model = null;
@@ -285,6 +286,9 @@ window.addEventListener("load", () => {
 function mainloop() {
     if (model) {
         model.update();
+        if (model.Player.Alive) {
+            model.Player.Force = UserInput.isPressed();
+        }
     }
 }
 function serverUpdateHandler(data) {
@@ -382,18 +386,19 @@ exports.default = Model;
 Object.defineProperty(exports, "__esModule", { value: true });
 const AbstractPlayer_1 = __webpack_require__(0);
 const Vector_1 = __webpack_require__(1);
+const ACCELERATION = new Vector_1.default(0.0, 0.01);
+const STARTSPEED = new Vector_1.default(1.0, 0);
+;
+var tmp = 0;
 class Player extends AbstractPlayer_1.default {
     constructor(name, index) {
         super(name, 0);
-        this.tmp = 0;
+        this.Force = false;
         this.Index = index;
-        this.Velocity = new Vector_1.default(0, 0);
+        this.Velocity = STARTSPEED.clone();
     }
     move(a) {
-        this.tmp += a;
-        let v = new Vector_1.default(Math.sin(0.1 * this.tmp), Math.sin(0.2 * this.tmp));
-        v.scale(0.5);
-        this.Position.copyFrom(v);
+        demo(a, this);
         super.updateTail();
     }
     die() {
@@ -401,6 +406,12 @@ class Player extends AbstractPlayer_1.default {
     }
 }
 exports.default = Player;
+function demo(a, player) {
+    tmp += a;
+    let v = new Vector_1.default(Math.sin(0.1 * tmp), Math.sin(0.2 * tmp));
+    v.scale(0.5);
+    player.Position.copyFrom(v);
+}
 
 
 /***/ }),
@@ -968,6 +979,89 @@ class LocalTestServer {
     }
 }
 exports.default = LocalTestServer;
+
+
+/***/ }),
+/* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var InputMethods;
+(function (InputMethods) {
+    InputMethods[InputMethods["MOUSE"] = 0] = "MOUSE";
+    InputMethods[InputMethods["KEYBOARD"] = 1] = "KEYBOARD";
+    InputMethods[InputMethods["TOUCH"] = 2] = "TOUCH";
+})(InputMethods = exports.InputMethods || (exports.InputMethods = {}));
+var Keys;
+(function (Keys) {
+    Keys[Keys["SPACE"] = 32] = "SPACE";
+    Keys[Keys["ENTER"] = 13] = "ENTER";
+    Keys[Keys["ESC"] = 27] = "ESC";
+    Keys[Keys["CTRL"] = 17] = "CTRL";
+    Keys[Keys["ALT"] = 18] = "ALT";
+    Keys[Keys["SHIFT"] = 16] = "SHIFT";
+})(Keys || (Keys = {}));
+exports.Input = InputMethods.MOUSE;
+var pressed = false;
+function isPressed() {
+    return pressed;
+}
+exports.isPressed = isPressed;
+document.addEventListener("mousedown", function (e) {
+    if (exports.Input === InputMethods.TOUCH) {
+        return;
+    }
+    exports.Input = InputMethods.MOUSE;
+    pressed = true;
+});
+document.addEventListener("mouseup", function (e) {
+    if (exports.Input === InputMethods.TOUCH) {
+        return;
+    }
+    pressed = false;
+});
+document.addEventListener("mouseout", function (e) {
+    if (exports.Input === InputMethods.TOUCH) {
+        return;
+    }
+    pressed = false;
+});
+window.oncontextmenu = function (e) {
+    e.stopPropagation();
+    return false;
+};
+document.addEventListener("touchstart", function (e) {
+    exports.Input = InputMethods.TOUCH;
+    touchHandler(e.touches);
+});
+document.addEventListener("touchend", function (e) {
+    touchHandler(e.touches);
+});
+document.addEventListener("touchcancel", function (e) {
+    touchHandler(e.touches);
+});
+function touchHandler(tl) {
+    pressed = tl.length > 0;
+}
+var keys_pressed = [];
+function keyboardUpdateHandler() {
+    if (exports.Input === InputMethods.KEYBOARD) {
+        pressed = keys_pressed.indexOf(Keys.SPACE) !== -1;
+    }
+}
+document.addEventListener("keydown", function (e) {
+    exports.Input = InputMethods.KEYBOARD;
+    if (keys_pressed.indexOf(e.keyCode) === -1) {
+        keys_pressed.push(e.keyCode);
+    }
+    keyboardUpdateHandler();
+});
+document.addEventListener("keyup", function (e) {
+    keys_pressed = keys_pressed.filter(k => { return k !== e.keyCode; });
+    keyboardUpdateHandler();
+});
 
 
 /***/ })

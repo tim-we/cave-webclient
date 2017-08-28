@@ -3,7 +3,7 @@ import Color from "../View/Color";
 
 export const TAILLENGTH = 80;
 const TAILNODESIZE = 2 * (2 + 1);
-const TAILWIDTH = 0.005;
+const TAILWIDTH = 0.006;
 
 var tmp1: Vector = new Vector();
 var tmp2: Vector = new Vector();

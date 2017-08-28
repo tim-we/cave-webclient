@@ -3,27 +3,29 @@ import AbstractPlayer from "./AbstractPlayer";
 import Vector from "./Vector";
 import Color from "../View/Color";
 
+const ACCELERATION: Vector = new Vector(0.0, 0.01);
+const STARTSPEED: Vector = new Vector(1.0, 0);;
+
+var tmp: number = 0;
+
 export default class Player extends AbstractPlayer {
 	public Velocity: Vector; // vector pointing to the next position
 
 	public Index: number; // position in the server player array
 
-	private tmp: number = 0;
+	public Force: boolean = false;
 
 	constructor(name: String, index: number) {
 		super(name, 0);
 
 		this.Index = index;
-		this.Velocity = new Vector(0, 0);
+		this.Velocity = STARTSPEED.clone();
 	}
 
 	public move(a: number) {
 		// move
 		//Vector.axpy(a, this.Velocity, this.Position);
-		this.tmp += a;
-		let v = new Vector(Math.sin(0.1 * this.tmp), Math.sin(0.2 * this.tmp));
-		v.scale(0.5);
-		this.Position.copyFrom(v);
+		demo(a, this);
 
 		super.updateTail();
 	}
@@ -31,4 +33,11 @@ export default class Player extends AbstractPlayer {
 	protected die() {
 		super.die();
 	}
+}
+
+function demo(a:number, player:Player) {
+	tmp += a;
+	let v = new Vector(Math.sin(0.1 * tmp), Math.sin(0.2 * tmp));
+	v.scale(0.5);
+	player.Position.copyFrom(v);
 }
