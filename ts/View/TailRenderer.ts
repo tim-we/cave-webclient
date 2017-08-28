@@ -2,7 +2,7 @@ declare function require(name: string): any;
 
 import { createProgramFromSource } from "./ShaderTools";
 import Color from "./Color";
-import Player from "../Model/Player";
+import AbstractPlayer from "../Model/AbstractPlayer";
 import Matrix from "../Model/Matrix";
 
 var gl: WebGLRenderingContext = null;
@@ -39,11 +39,12 @@ export function init(_gl: WebGLRenderingContext): void {
 	uniformZ = gl.getUniformLocation(program, "zPos");
 }
 
-export function draw(transform:Matrix, player:Player): void {
+export function draw(transform:Matrix, player:AbstractPlayer): void {
 	// assert gl.BLEND is enabled
 
 	gl.useProgram(program);
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	//gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
 	if (player === null || player.Tail === null) { console.log("null!"); }
 
@@ -60,5 +61,5 @@ export function draw(transform:Matrix, player:Player): void {
 	gl.uniform1f(uniformZ, player.Z);
 	player.Color.setUniform(gl, uniformColor);
 
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, Player.getTailVertexCount());
+	gl.drawArrays(gl.TRIANGLE_STRIP, 0, AbstractPlayer.getTailVertexCount());
 }

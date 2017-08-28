@@ -48,7 +48,8 @@ export function draw() {
 
 	MapRenderer.draw(transformMatrix);
 	
-	model.Players.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
+	model.OnlinePlayers.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
+	PlayerRenderer.draw(transformMatrix, model.Player);
 }
 
 export function resize(width:number, height:number): void {

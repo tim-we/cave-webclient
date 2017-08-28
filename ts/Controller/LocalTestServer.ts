@@ -3,7 +3,7 @@ import { ServerGameMessage } from "./ICommunication";
 
 type ServerGameUpdateHandler = (data: ServerGameMessage) => void;
 
-const UPDATE_RATE = 200;
+const UPDATE_RATE = 100;
 
 export default class LocalTestServer implements Connection {
 
@@ -32,8 +32,8 @@ export default class LocalTestServer implements Connection {
 				type: 1,
 				t: time,
 				ps: [{
-					x: 0.08 * Math.cos(0.002 * time),
-					y: 0.08 * Math.sin(0.005 * time)
+					x: 0,
+					y: 0
 				}], // positions
 				as: [true], // alive status
 				r: _this.Rotation

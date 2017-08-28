@@ -2,7 +2,7 @@ declare function require(name: string): any;
 
 import { createProgramFromSource } from "./ShaderTools";
 import Color from "./Color";
-import Player from "../Model/Player";
+import AbstractPlayer from "../Model/AbstractPlayer";
 import Matrix from "../Model/Matrix";
 import * as TailRenderer from "./TailRenderer";
 
@@ -53,7 +53,7 @@ export function init(_gl: WebGLRenderingContext):void {
 	TailRenderer.init(_gl);
 }
 
-function setUpBuffer(player: Player) {
+function setUpBuffer(player: AbstractPlayer) {
 	let x: number = player.Position.getX();
 	let y: number = player.Position.getY();
 
@@ -66,7 +66,7 @@ function setUpBuffer(player: Player) {
 	gl.bufferData(gl.ARRAY_BUFFER, data, gl.STREAM_DRAW);
 }
 
-export function draw(transform: Matrix, player: Player) {
+export function draw(transform: Matrix, player: AbstractPlayer) {
 	gl.enable(gl.BLEND);
 	
 	TailRenderer.draw(transform, player);

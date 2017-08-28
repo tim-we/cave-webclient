@@ -26,9 +26,8 @@ function mainloop() {
 		model.update();
 	}
 
-	/*if (tmp++ > 6) {
+	/*if (tmp++ > 42) {
 		View.stopDrawLoop();
-		console.log(model.Player.Tail);
 	}//*/
 }
 
@@ -49,7 +48,7 @@ function test() {
 		names: ["Bob"]
 	});
 
-	model.onUserInputChange = (pressed: boolean) => {
+	/*model.onUserInputChange = (pressed: boolean) => {
 		connection.sendInput(pressed);
-	}
+	}*/
 }
