@@ -1,5 +1,7 @@
 import AbstractPlayer from "./AbstractPlayer";
 
+import { IPlayerInitData, IPlayerData } from "../Controller/ICommunication";
+
 import Vector from "./Vector";
 import Color from "../View/Color";
 
@@ -8,18 +10,18 @@ export default class OnlinePlayer extends AbstractPlayer {
 	public PDelta: Vector; // vector pointing to the next position
 	public PDeltaLength: number;
 
-	constructor(name: String, zPos: number) {
-		super(name, zPos);
+	constructor(data:IPlayerInitData, zPos: number) {
+		super(data, zPos);
 
 		this.PDelta = new Vector(0, 0);
 		this.PDeltaLength = 0;
 	}
 
-	public updateData(px: number, py: number, alive:boolean): void {
-		this.PDelta.diff2d(px, py);
+	public updateData(data:IPlayerData): void {
+		this.PDelta.diff2d(data.pos.x, data.pos.y);
 		this.PDeltaLength = this.PDelta.length();
 
-		if (this.Alive && !alive) { super.die(); }
+		if (this.Alive && !data.alv) { super.die(); }
 	}
 
 	public move(a: number) {

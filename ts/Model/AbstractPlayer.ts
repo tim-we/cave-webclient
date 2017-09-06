@@ -1,6 +1,11 @@
 import Vector from "./Vector";
 import Color from "../View/Color";
 
+import {
+	IPlayerInitData,
+	IPlayerData
+} from "../Controller/ICommunication";
+
 export const TAILLENGTH = 80;
 const TAILNODESIZE = 2 * (2 + 1);
 const TAILWIDTH = 0.006;
@@ -26,11 +31,13 @@ export default abstract class AbstractPlayer {
 		=> 2 * (2 + 1) = 6 floats per "tail point"
 	*/
 
-	constructor(name: String, zPos:number) {
+	constructor(data:IPlayerInitData, zPos:number) {
 		this.Position = new Vector(0, 0);
 		this.PreviousPosition = this.Position.clone();
 		this.Z = zPos;
 		this.Alive = true;
+
+		// TODO: data.color
 
 		this.Tail = new Float32Array(TAILLENGTH * TAILNODESIZE);
 
@@ -77,6 +84,8 @@ export default abstract class AbstractPlayer {
 	public static getTailVertexCount(): number{
 		return TAILLENGTH * 2;
 	}
+
+	public abstract updateData(data: IPlayerData): void;
 
 }
 

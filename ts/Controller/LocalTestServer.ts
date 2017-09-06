@@ -1,7 +1,7 @@
 import { Connection } from "./IConnection";
-import { ServerGameMessage } from "./ICommunication";
+import { IServerGameStateUpdate } from "./ICommunication";
 
-type ServerGameUpdateHandler = (data: ServerGameMessage) => void;
+type ServerGameUpdateHandler = (data: IServerGameStateUpdate) => void;
 
 const UPDATE_RATE = 100;
 
@@ -29,14 +29,14 @@ export default class LocalTestServer implements Connection {
 			_this.Rotation += 0.01;
 
 			_this.updateHandler({
-				type: 1,
-				t: time,
-				ps: [{
-					x: 0,
-					y: 0
-				}], // positions
-				as: [true], // alive status
-				r: _this.Rotation
+				type: "state",
+				time: time,
+				pdata: [{
+					pos: { x: 0, y: 0 },
+					vel: { x: 0, y: 0 },
+					alv: true
+				}],
+				rotation: _this.Rotation
 			});
 		}, UPDATE_RATE);
 	}

@@ -78,7 +78,7 @@ const TAILWIDTH = 0.006;
 var tmp1 = new Vector_1.default();
 var tmp2 = new Vector_1.default();
 class AbstractPlayer {
-    constructor(name, zPos) {
+    constructor(data, zPos) {
         this.Color = new Color_1.default(0.0, 0.5, 1.0);
         this.Position = new Vector_1.default(0, 0);
         this.PreviousPosition = this.Position.clone();
@@ -272,8 +272,8 @@ exports.createProgramFromSource = createProgramFromSource;
 Object.defineProperty(exports, "__esModule", { value: true });
 const Model_1 = __webpack_require__(5);
 const View = __webpack_require__(9);
-const UserInput = __webpack_require__(22);
-const LocalTestServer_1 = __webpack_require__(21);
+const UserInput = __webpack_require__(21);
+const LocalTestServer_1 = __webpack_require__(22);
 var connection = new LocalTestServer_1.default(serverUpdateHandler);
 var model = null;
 var tmp = 0;
@@ -299,11 +299,12 @@ function serverUpdateHandler(data) {
 function test() {
     connection.connect();
     model = new Model_1.default({
-        type: 0,
-        n: 1,
-        i: 0,
-        t: -3,
-        names: ["Bob"]
+        type: "start",
+        index: 0,
+        time: -3,
+        playerInitData: [
+            { name: "Bob", color: 0 }
+        ]
     });
 }
 
@@ -322,24 +323,23 @@ class Model {
     constructor(data) {
         this.Rotation = 0.1 * Math.PI;
         this.RotationDelta = 0.0;
-        let n = data.n;
+        let n = data.playerInitData.length;
         console.assert(n > 0);
-        console.assert(data.names.length === n);
-        console.assert(data.t < 0);
-        this.Time = data.t;
-        this.NextTime = data.t;
+        console.assert(data.time < 0);
+        this.Time = data.time;
+        this.NextTime = data.time;
         this.TimeDelta = 0.0;
         this.LastUpdate = performance.now();
         this.OnlinePlayers = new Array(n - 1);
         let z = 0.2;
         let j = 0;
-        this.Player = new Player_1.default(data.names[data.i], data.i);
+        this.Player = new Player_1.default(data.playerInitData[data.index], 0);
         for (let i = 0; i < n - 1; i++) {
-            if (data.i === i) {
+            if (data.index === i) {
                 j++;
             }
             else {
-                this.OnlinePlayers[j] = new OnlinePlayer_1.default(data.names[j], z);
+                this.OnlinePlayers[j] = new OnlinePlayer_1.default(data.playerInitData[j], z);
                 z += 0.1;
                 j++;
             }
@@ -348,16 +348,13 @@ class Model {
         this.Map = new Map_1.default();
     }
     updateData(data) {
-        console.assert(data.t >= this.NextTime);
-        console.assert(data.ps.length === this.OnlinePlayers.length + 1);
-        console.assert(data.as.length === this.OnlinePlayers.length + 1);
-        this.TimeDelta = Math.max(32, data.t - this.Time);
-        this.NextTime = data.t;
+        console.assert(data.time >= this.NextTime);
+        this.TimeDelta = Math.max(32, data.time - this.Time);
+        this.NextTime = data.time;
         this.OnlinePlayers.forEach((p, i) => {
-            let pos = data.ps[i];
-            p.updateData(pos.x, pos.y, data.as[i]);
+            p.updateData(data.pdata[i]);
         });
-        this.RotationDelta = data.r - this.Rotation;
+        this.RotationDelta = data.rotation - this.Rotation;
     }
     update() {
         if (this.TimeDelta <= 0.0) {
@@ -391,8 +388,8 @@ const STARTSPEED = new Vector_1.default(1.0, 0);
 ;
 var tmp = 0;
 class Player extends AbstractPlayer_1.default {
-    constructor(name, index) {
-        super(name, 0);
+    constructor(data, index) {
+        super(data, 0);
         this.Force = false;
         this.Index = index;
         this.Velocity = STARTSPEED.clone();
@@ -400,6 +397,9 @@ class Player extends AbstractPlayer_1.default {
     move(a) {
         demo(a, this);
         super.updateTail();
+    }
+    updateData(data) {
+        throw new Error("Method not implemented.");
     }
     die() {
         super.die();
@@ -424,15 +424,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const AbstractPlayer_1 = __webpack_require__(0);
 const Vector_1 = __webpack_require__(1);
 class OnlinePlayer extends AbstractPlayer_1.default {
-    constructor(name, zPos) {
-        super(name, zPos);
+    constructor(data, zPos) {
+        super(data, zPos);
         this.PDelta = new Vector_1.default(0, 0);
         this.PDeltaLength = 0;
     }
-    updateData(px, py, alive) {
-        this.PDelta.diff2d(px, py);
+    updateData(data) {
+        this.PDelta.diff2d(data.pos.x, data.pos.y);
         this.PDeltaLength = this.PDelta.length();
-        if (this.Alive && !alive) {
+        if (this.Alive && !data.alv) {
             super.die();
         }
     }
@@ -942,52 +942,6 @@ module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; /
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const UPDATE_RATE = 100;
-class LocalTestServer {
-    constructor(updateHandler) {
-        this.connected = false;
-        this.Rotation = 0.0;
-        this.updateHandler = updateHandler;
-        this.RoundStart = Date.now() + 3;
-    }
-    connect() {
-        this.connected = true;
-        let _this = this;
-        this.updateInterval = setInterval(() => {
-            let time = Date.now() - _this.RoundStart;
-            _this.Rotation += 0.01;
-            _this.updateHandler({
-                type: 1,
-                t: time,
-                ps: [{
-                        x: 0,
-                        y: 0
-                    }],
-                as: [true],
-                r: _this.Rotation
-            });
-        }, UPDATE_RATE);
-    }
-    disconnect() {
-        this.connected = false;
-        clearInterval(this.updateInterval);
-    }
-    isConnected() {
-        return this.connected;
-    }
-    sendInput(pressed) {
-    }
-}
-exports.default = LocalTestServer;
-
-
-/***/ }),
-/* 22 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
 var InputMethods;
 (function (InputMethods) {
     InputMethods[InputMethods["MOUSE"] = 0] = "MOUSE";
@@ -1062,6 +1016,52 @@ document.addEventListener("keyup", function (e) {
     keys_pressed = keys_pressed.filter(k => { return k !== e.keyCode; });
     keyboardUpdateHandler();
 });
+
+
+/***/ }),
+/* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const UPDATE_RATE = 100;
+class LocalTestServer {
+    constructor(updateHandler) {
+        this.connected = false;
+        this.Rotation = 0.0;
+        this.updateHandler = updateHandler;
+        this.RoundStart = Date.now() + 3;
+    }
+    connect() {
+        this.connected = true;
+        let _this = this;
+        this.updateInterval = setInterval(() => {
+            let time = Date.now() - _this.RoundStart;
+            _this.Rotation += 0.01;
+            _this.updateHandler({
+                type: "state",
+                time: time,
+                pdata: [{
+                        pos: { x: 0, y: 0 },
+                        vel: { x: 0, y: 0 },
+                        alv: true
+                    }],
+                rotation: _this.Rotation
+            });
+        }, UPDATE_RATE);
+    }
+    disconnect() {
+        this.connected = false;
+        clearInterval(this.updateInterval);
+    }
+    isConnected() {
+        return this.connected;
+    }
+    sendInput(pressed) {
+    }
+}
+exports.default = LocalTestServer;
 
 
 /***/ })

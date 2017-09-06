@@ -6,7 +6,7 @@ import * as UserInput from "./UserInput";
 
 import Server from "./Server";
 import LocalTestServer from "./LocalTestServer";
-import { ServerGameMessage } from "./ICommunication";
+import { IServerGameStateUpdate } from "./ICommunication";
 
 var connection: Connection = new LocalTestServer(serverUpdateHandler);
 var model: Model = null;
@@ -37,7 +37,7 @@ function mainloop() {
 	}//*/
 }
 
-function serverUpdateHandler(data:ServerGameMessage):void {
+function serverUpdateHandler(data:IServerGameStateUpdate):void {
 	if (model) {
 		model.updateData(data);
 	}
@@ -47,11 +47,12 @@ function test() {
 	connection.connect();
 
 	model = new Model({
-		type: 0,
-		n: 1,	// number of players
-		i: 0,	// player index
-		t: -3,	// time
-		names: ["Bob"]
+		type: "start",
+		index: 0,	// player index
+		time: -3,
+		playerInitData: [
+			{ name: "Bob", color: 0 }
+		]
 	});
 
 	/*model.onUserInputChange = (pressed: boolean) => {

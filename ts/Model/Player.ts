@@ -3,6 +3,8 @@ import AbstractPlayer from "./AbstractPlayer";
 import Vector from "./Vector";
 import Color from "../View/Color";
 
+import { IPlayerInitData, IPlayerData } from "../Controller/ICommunication";
+
 const ACCELERATION: Vector = new Vector(0.0, 0.01);
 const STARTSPEED: Vector = new Vector(1.0, 0);;
 
@@ -15,8 +17,10 @@ export default class Player extends AbstractPlayer {
 
 	public Force: boolean = false;
 
-	constructor(name: String, index: number) {
-		super(name, 0);
+	constructor(data:IPlayerInitData, index: number) {
+		super(data, 0);
+
+		// TODO: data.color
 
 		this.Index = index;
 		this.Velocity = STARTSPEED.clone();
@@ -28,6 +32,10 @@ export default class Player extends AbstractPlayer {
 		demo(a, this);
 
 		super.updateTail();
+	}
+
+	public updateData(data: IPlayerData): void {
+		throw new Error("Method not implemented.");
 	}
 
 	protected die() {

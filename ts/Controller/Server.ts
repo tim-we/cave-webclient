@@ -1,5 +1,5 @@
 import { Connection } from "./IConnection";
-import { ClientMessage } from "./ICommunication"
+import { IClientStateUpdate } from "./ICommunication"
 
 export default class Server implements Connection {
 	private ws: WebSocket = null;
@@ -37,9 +37,12 @@ export default class Server implements Connection {
 	}
 
 	public sendInput(pressed: boolean) {
-		let msg: ClientMessage = {
-			action: "input",
-			value: pressed
+		let msg: IClientStateUpdate = {
+			type: "state",
+			time: 0, // TODO: model time
+			pos: { x: 0, y: 0},
+			vel: { x: 0, y: 0},
+			pow: pressed
 		};
 	}
 }
