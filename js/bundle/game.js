@@ -274,13 +274,20 @@ const Model_1 = __webpack_require__(5);
 const View = __webpack_require__(9);
 const UserInput = __webpack_require__(21);
 const LocalTestServer_1 = __webpack_require__(22);
-var connection = new LocalTestServer_1.default(serverUpdateHandler);
+var connection = new LocalTestServer_1.default();
 var model = null;
+var tmpStart;
 window.addEventListener("load", () => {
-    test();
-    View.init(model, mainloop);
-    mainloop();
-    View.startDrawLoop();
+    connection.connect().then(() => {
+        return connection.waitForStart();
+    }).then((data) => {
+        console.log("Starting game!");
+        model = new Model_1.default(data);
+        tmpStart = Date.now();
+        View.init(model, mainloop);
+        mainloop();
+        View.startDrawLoop();
+    });
 });
 function mainloop() {
     if (model) {
@@ -288,23 +295,17 @@ function mainloop() {
         if (model.Player.Alive) {
             model.Player.Force = UserInput.isPressed();
         }
+        model.updateData({
+            type: "state",
+            time: Date.now() - tmpStart,
+            pdata: [{
+                    pos: { x: 0, y: 0 },
+                    vel: { x: 0, y: 0 },
+                    alv: true
+                }],
+            rotation: 0
+        });
     }
-}
-function serverUpdateHandler(data) {
-    if (model) {
-        model.updateData(data);
-    }
-}
-function test() {
-    connection.connect();
-    model = new Model_1.default({
-        type: "start",
-        index: 0,
-        time: -3,
-        playerInitData: [
-            { name: "Bob", color: 0 }
-        ]
-    });
 }
 
 
@@ -1028,35 +1029,43 @@ document.addEventListener("keyup", function (e) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const UPDATE_RATE = 100;
 class LocalTestServer {
-    constructor(updateHandler) {
+    constructor() {
         this.connected = false;
+        this.gameStarted = false;
         this.Rotation = 0.0;
-        this.updateHandler = updateHandler;
         this.RoundStart = Date.now() + 3;
     }
     connect() {
-        let _this = this;
         return new Promise((resolve, reject) => {
-            if (_this.connected) {
+            if (this.connected) {
                 reject();
             }
             else {
-                _this.connected = true;
-                _this.updateInterval = setInterval(() => {
-                    let time = Date.now() - _this.RoundStart;
-                    _this.Rotation += 0.01;
-                    _this.updateHandler({
-                        type: "state",
-                        time: time,
-                        pdata: [{
-                                pos: { x: 0, y: 0 },
-                                vel: { x: 0, y: 0 },
-                                alv: true
-                            }],
-                        rotation: _this.Rotation
-                    });
+                this.connected = true;
+                this.gameStarted = false;
+                this.updateInterval = setInterval(() => {
+                    let time = Date.now() - this.RoundStart;
+                    this.Rotation += 0.01;
                 }, UPDATE_RATE);
                 resolve();
+            }
+        });
+    }
+    waitForStart() {
+        return new Promise((resolve, reject) => {
+            if (!this.connected || this.gameStarted) {
+                reject();
+            }
+            else {
+                this.gameStarted = true;
+                resolve({
+                    type: "start",
+                    index: 0,
+                    time: -3,
+                    playerInitData: [
+                        { name: "Bob", color: 0 }
+                    ]
+                });
             }
         });
     }
@@ -1070,7 +1079,7 @@ class LocalTestServer {
     isConnected() {
         return this.connected;
     }
-    sendInput(pressed) {
+    updateState(model) {
     }
 }
 exports.default = LocalTestServer;

@@ -1,9 +1,14 @@
+import Model from "../Model/Model";
+import { IServerGameStart } from "./ICommunication";
+
 export interface Connection {
 	connect: () => Promise<void>;
+
+	waitForStart: () => Promise<IServerGameStart>;
 
 	disconnect: () => void;
 
 	isConnected: () => boolean;
 
-	sendInput: (pressed:boolean) => void;
+	updateState: (model:Model) => void;
 }

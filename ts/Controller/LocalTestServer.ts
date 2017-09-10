@@ -1,38 +1,36 @@
 import { Connection } from "./IConnection";
-import { IServerGameStateUpdate } from "./ICommunication";
+import { IServerGameStateUpdate, IServerGameStart } from "./ICommunication";
+import Model from "../Model/Model";
 
-type ServerGameUpdateHandler = (data: IServerGameStateUpdate) => void;
+//type ServerGameUpdateHandler = (data: IServerGameStateUpdate) => void;
 
 const UPDATE_RATE = 100;
 
 export default class LocalTestServer implements Connection {
-
 	private connected: boolean = false;
-	private updateHandler: ServerGameUpdateHandler;
+	private gameStarted:boolean = false;
 	private updateInterval: number;
 	private RoundStart: number;
 	private Rotation: number = 0.0;
 
-	public constructor(updateHandler:ServerGameUpdateHandler) {
-		this.updateHandler = updateHandler;
-
+	public constructor() {
 		this.RoundStart = Date.now() + 3;
 	}
 
 	public connect():Promise<void> {
-		let _this = this;
 
 		return new Promise<void>((resolve, reject) => {
-			if(_this.connected) {
+			if(this.connected) {
 				reject();
 			} else {
-				_this.connected = true;
+				this.connected = true;
+				this.gameStarted = false;
 
-				_this.updateInterval = setInterval(() => {
-					let time: number = Date.now() - _this.RoundStart;
-					_this.Rotation += 0.01;
+				this.updateInterval = setInterval(() => {
+					let time: number = Date.now() - this.RoundStart;
+					this.Rotation += 0.01;
 		
-					_this.updateHandler({
+					/*this.updateHandler({
 						type: "state",
 						time: time,
 						pdata: [{
@@ -40,14 +38,34 @@ export default class LocalTestServer implements Connection {
 							vel: { x: 0, y: 0 },
 							alv: true
 						}],
-						rotation: _this.Rotation
-					});
+						rotation: this.Rotation
+					});*/
 				}, UPDATE_RATE);
 
 				resolve();
 			}
 		});
 
+	}
+
+	public waitForStart(): Promise<IServerGameStart> {
+
+		return new Promise<IServerGameStart>((resolve, reject) => {
+			if(!this.connected || this.gameStarted) {
+				reject();
+			} else {
+				this.gameStarted = true;
+
+				resolve({
+					type: "start",
+					index: 0,	// player index
+					time: -3,
+					playerInitData: [
+						{ name: "Bob", color: 0 }
+					]
+				});
+			}
+		});
 	}
 
 	public disconnect() {
@@ -61,8 +79,8 @@ export default class LocalTestServer implements Connection {
 		return this.connected;
 	}
 
-	public sendInput(pressed:boolean) {
-		
+	public updateState(model:Model) {
+		// ignore data for now
 	}
 
 }

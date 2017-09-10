@@ -1,9 +1,21 @@
 import { Connection } from "./IConnection";
-import { IClientStateUpdate } from "./ICommunication"
+
+import {
+	IClientStateUpdate,
+	IServerMessage,
+	IServerGameStart,
+	IServerLogMessage,
+	IServerRejection
+} from "./ICommunication";
+
+import Model from "../Model/Model";
+
+type wsMessageHandler = (data:IServerMessage) => void;
 
 export default class Server implements Connection {
 	private ws: WebSocket = null;
 	private url: string;
+	private wsMsgHandler:wsMessageHandler;
 
 	public constructor(secure:boolean = false, host:string = "localhost", port:number = 8000) {
 		this.url = (secure ? "ws":"wss") + "://" + host + ":" + port;
@@ -12,19 +24,57 @@ export default class Server implements Connection {
 	}
 
 	public connect():Promise<void> {
-		let _this = this;
 
 		return new Promise<void>((resolve, reject) => {
-			if(!_this.isConnected()) {
+			if(!this.isConnected()) {
 				reject();
 			} else {
-				_this.ws = new WebSocket(this.url);
+				console.log("Connecting...");
+				this.ws = new WebSocket(this.url);
+				console.log("Connected.");
 
-				_this.ws.onclose = () => {
-					_this.ws = null;
+				this.ws.onclose = () => {
+					this.ws = null;
+				};
+
+				this.ws.onmessage = (e:MessageEvent) => {
+					let data:IServerMessage = JSON.parse(e.data.toString());
+
+					if(data.type === "msg") {
+						console.log("Server Message: " + (<IServerLogMessage>data).msg);
+					} else if(data.type === "reject") {
+						console.log("Rejected by server! Reason: " + (<IServerRejection>data).reason);
+					} else {
+						if(this.wsMsgHandler) {
+							this.wsMsgHandler(data);
+						} else {
+							console.warn("Unhandled message!");
+							console.log(e.data);
+						}
+					}
 				};
 
 				resolve();
+			}
+		});
+	}
+
+	public waitForStart(): Promise<IServerGameStart> {
+		console.log("Waiting for round start...");
+
+		return new Promise<IServerGameStart>((resolve, reject) => {
+			if(this.isConnected()) {
+				this.wsMsgHandler = (data:IServerMessage) => {
+					if(data.type === "start") {
+						resolve(<IServerGameStart>data);
+					} else if(data.type === "lobby") {
+						console.log("lobby update");
+					} else {
+						reject("Unexpected Server Message (type = " + data.type + ")");
+					}
+				};
+			} else {
+				reject();
 			}
 		});
 	}
@@ -42,13 +92,13 @@ export default class Server implements Connection {
 		return this.ws && this.ws.readyState === this.ws.OPEN;
 	}
 
-	public sendInput(pressed: boolean) {
+	public updateState(model:Model) {
 		let msg: IClientStateUpdate = {
 			type: "state",
 			time: 0, // TODO: model time
 			pos: { x: 0, y: 0},
 			vel: { x: 0, y: 0},
-			pow: pressed
+			pow: model.Player.Force
 		};
 	}
 }
