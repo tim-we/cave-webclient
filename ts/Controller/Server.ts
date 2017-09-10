@@ -5,22 +5,28 @@ export default class Server implements Connection {
 	private ws: WebSocket = null;
 	private url: string;
 
-	public constructor(url:string = "ws://destroids.io:8000") {
-		this.url = url;
+	public constructor(secure:boolean = false, host:string = "localhost", port:number = 8000) {
+		this.url = (secure ? "ws":"wss") + "://" + host + ":" + port;
 
 		this.connect();
 	}
 
-	public connect() {
-		if (!this.isConnected()) {
-			this.ws = new WebSocket(this.url);
+	public connect():Promise<void> {
+		let _this = this;
 
-			let _this = this;
+		return new Promise<void>((resolve, reject) => {
+			if(!_this.isConnected()) {
+				reject();
+			} else {
+				_this.ws = new WebSocket(this.url);
 
-			this.ws.onclose = () => {
-				_this.ws = null;
-			};
-		}
+				_this.ws.onclose = () => {
+					_this.ws = null;
+				};
+
+				resolve();
+			}
+		});
 	}
 
 	public disconnect() {

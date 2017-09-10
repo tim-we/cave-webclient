@@ -19,31 +19,41 @@ export default class LocalTestServer implements Connection {
 		this.RoundStart = Date.now() + 3;
 	}
 
-	public connect() {
-		this.connected = true;
-
+	public connect():Promise<void> {
 		let _this = this;
 
-		this.updateInterval = setInterval(() => {
-			let time: number = Date.now() - _this.RoundStart;
-			_this.Rotation += 0.01;
+		return new Promise<void>((resolve, reject) => {
+			if(_this.connected) {
+				reject();
+			} else {
+				_this.connected = true;
 
-			_this.updateHandler({
-				type: "state",
-				time: time,
-				pdata: [{
-					pos: { x: 0, y: 0 },
-					vel: { x: 0, y: 0 },
-					alv: true
-				}],
-				rotation: _this.Rotation
-			});
-		}, UPDATE_RATE);
+				_this.updateInterval = setInterval(() => {
+					let time: number = Date.now() - _this.RoundStart;
+					_this.Rotation += 0.01;
+		
+					_this.updateHandler({
+						type: "state",
+						time: time,
+						pdata: [{
+							pos: { x: 0, y: 0 },
+							vel: { x: 0, y: 0 },
+							alv: true
+						}],
+						rotation: _this.Rotation
+					});
+				}, UPDATE_RATE);
+
+				resolve();
+			}
+		});
+
 	}
 
 	public disconnect() {
-		this.connected = false;
+		if(this.connected) { return; }
 
+		this.connected = false;
 		clearInterval(this.updateInterval);
 	}
 

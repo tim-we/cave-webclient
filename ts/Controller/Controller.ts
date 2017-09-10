@@ -11,7 +11,7 @@ import { IServerGameStateUpdate } from "./ICommunication";
 var connection: Connection = new LocalTestServer(serverUpdateHandler);
 var model: Model = null;
 
-var tmp: number = 0;
+//var tmp: number = 0;
 
 window.addEventListener("load", () => {
 	test();

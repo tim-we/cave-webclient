@@ -15,6 +15,8 @@ export default class OnlinePlayer extends AbstractPlayer {
 
 		this.PDelta = new Vector(0, 0);
 		this.PDeltaLength = 0;
+
+		this.Color = new Color(1.0, 0.2, 0.0);
 	}
 
 	public updateData(data:IPlayerData): void {

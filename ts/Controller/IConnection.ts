@@ -1,5 +1,5 @@
 export interface Connection {
-	connect: () => void;
+	connect: () => Promise<void>;
 
 	disconnect: () => void;
 

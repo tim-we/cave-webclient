@@ -70,8 +70,39 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Vector_1 = __webpack_require__(1);
-const Color_1 = __webpack_require__(2);
+class Color {
+    constructor(r, g, b, a = 1.0) {
+        this.red = r;
+        this.green = g;
+        this.blue = b;
+        this.alpha = a;
+    }
+    setClearColor(gl) {
+        gl.clearColor(this.red, this.green, this.blue, this.alpha);
+    }
+    setUniform(gl, location) {
+        gl.uniform4f(location, this.red, this.green, this.blue, this.alpha);
+    }
+    static interpolate(a, b, x, result) {
+        let xa = 1.0 - x;
+        result.red = xa * a.red + x * b.red;
+        result.green = xa * a.green + x * b.green;
+        result.blue = xa * a.blue + x * b.blue;
+        result.alpha = xa * a.alpha + x * b.alpha;
+    }
+}
+exports.default = Color;
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Vector_1 = __webpack_require__(2);
+const Color_1 = __webpack_require__(0);
 exports.TAILLENGTH = 80;
 const TAILNODESIZE = 2 * (2 + 1);
 const TAILWIDTH = 0.006;
@@ -128,7 +159,7 @@ function shiftTailData(data) {
 
 
 /***/ }),
-/* 1 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -191,37 +222,6 @@ exports.default = Vector;
 
 
 /***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-class Color {
-    constructor(r, g, b, a = 1.0) {
-        this.red = r;
-        this.green = g;
-        this.blue = b;
-        this.alpha = a;
-    }
-    setClearColor(gl) {
-        gl.clearColor(this.red, this.green, this.blue, this.alpha);
-    }
-    setUniform(gl, location) {
-        gl.uniform4f(location, this.red, this.green, this.blue, this.alpha);
-    }
-    static interpolate(a, b, x, result) {
-        let xa = 1.0 - x;
-        result.red = xa * a.red + x * b.red;
-        result.green = xa * a.green + x * b.green;
-        result.blue = xa * a.blue + x * b.blue;
-        result.alpha = xa * a.alpha + x * b.alpha;
-    }
-}
-exports.default = Color;
-
-
-/***/ }),
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -276,7 +276,6 @@ const UserInput = __webpack_require__(21);
 const LocalTestServer_1 = __webpack_require__(22);
 var connection = new LocalTestServer_1.default(serverUpdateHandler);
 var model = null;
-var tmp = 0;
 window.addEventListener("load", () => {
     test();
     View.init(model, mainloop);
@@ -381,8 +380,8 @@ exports.default = Model;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const AbstractPlayer_1 = __webpack_require__(0);
-const Vector_1 = __webpack_require__(1);
+const AbstractPlayer_1 = __webpack_require__(1);
+const Vector_1 = __webpack_require__(2);
 const ACCELERATION = new Vector_1.default(0.0, 0.01);
 const STARTSPEED = new Vector_1.default(1.0, 0);
 ;
@@ -421,13 +420,15 @@ function demo(a, player) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const AbstractPlayer_1 = __webpack_require__(0);
-const Vector_1 = __webpack_require__(1);
+const AbstractPlayer_1 = __webpack_require__(1);
+const Vector_1 = __webpack_require__(2);
+const Color_1 = __webpack_require__(0);
 class OnlinePlayer extends AbstractPlayer_1.default {
     constructor(data, zPos) {
         super(data, zPos);
         this.PDelta = new Vector_1.default(0, 0);
         this.PDeltaLength = 0;
+        this.Color = new Color_1.default(1.0, 0.2, 0.0);
     }
     updateData(data) {
         this.PDelta.diff2d(data.pos.x, data.pos.y);
@@ -727,7 +728,7 @@ exports.default = Matrix;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(3);
-const Color_1 = __webpack_require__(2);
+const Color_1 = __webpack_require__(0);
 var data = null;
 var bufferVersion = -1;
 var gl = null;
@@ -797,7 +798,7 @@ module.exports = "precision mediump float;\n\n//varying vec4 color;\n\nvoid main
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(3);
-const Color_1 = __webpack_require__(2);
+const Color_1 = __webpack_require__(0);
 const TailRenderer = __webpack_require__(16);
 const RADIUS = 0.05;
 var gl = null;
@@ -871,7 +872,7 @@ exports.draw = draw;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(3);
-const AbstractPlayer_1 = __webpack_require__(0);
+const AbstractPlayer_1 = __webpack_require__(1);
 var gl = null;
 var buffer = null;
 var program = null;
@@ -1034,24 +1035,35 @@ class LocalTestServer {
         this.RoundStart = Date.now() + 3;
     }
     connect() {
-        this.connected = true;
         let _this = this;
-        this.updateInterval = setInterval(() => {
-            let time = Date.now() - _this.RoundStart;
-            _this.Rotation += 0.01;
-            _this.updateHandler({
-                type: "state",
-                time: time,
-                pdata: [{
-                        pos: { x: 0, y: 0 },
-                        vel: { x: 0, y: 0 },
-                        alv: true
-                    }],
-                rotation: _this.Rotation
-            });
-        }, UPDATE_RATE);
+        return new Promise((resolve, reject) => {
+            if (_this.connected) {
+                reject();
+            }
+            else {
+                _this.connected = true;
+                _this.updateInterval = setInterval(() => {
+                    let time = Date.now() - _this.RoundStart;
+                    _this.Rotation += 0.01;
+                    _this.updateHandler({
+                        type: "state",
+                        time: time,
+                        pdata: [{
+                                pos: { x: 0, y: 0 },
+                                vel: { x: 0, y: 0 },
+                                alv: true
+                            }],
+                        rotation: _this.Rotation
+                    });
+                }, UPDATE_RATE);
+                resolve();
+            }
+        });
     }
     disconnect() {
+        if (this.connected) {
+            return;
+        }
         this.connected = false;
         clearInterval(this.updateInterval);
     }
