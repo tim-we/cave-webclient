@@ -21,11 +21,24 @@
 			left:0px;
 			top:0px;
 		}
+
+		#fps {
+			position: fixed;
+			top: 2px;
+			right: 2px;
+			font-size: 12px;
+			color: white;
+			text-align: right;
+			display: none;
+		}
+
+		#fps.show { display: block; }
 	</style>
 </head>
 
 <body>
 	<canvas id="game"></canvas>
+	<div id="fps"></div>
 </body>
 
 </html>

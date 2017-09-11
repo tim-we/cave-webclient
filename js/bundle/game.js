@@ -272,8 +272,8 @@ exports.createProgramFromSource = createProgramFromSource;
 Object.defineProperty(exports, "__esModule", { value: true });
 const Model_1 = __webpack_require__(5);
 const View = __webpack_require__(9);
-const UserInput = __webpack_require__(21);
-const LocalTestServer_1 = __webpack_require__(22);
+const UserInput = __webpack_require__(22);
+const LocalTestServer_1 = __webpack_require__(23);
 var connection = new LocalTestServer_1.default();
 var model = null;
 var tmpStart;
@@ -522,6 +522,7 @@ exports.default = Map;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Renderer = __webpack_require__(10);
+const FPS = __webpack_require__(21);
 var canvas;
 var drawAgain = false;
 var afterDraw;
@@ -542,6 +543,7 @@ function init(model, afterDrawHook) {
             Renderer.draw();
         }
     });
+    FPS.enable();
 }
 exports.init = init;
 function startDrawLoop(drawLoop = true) {
@@ -558,6 +560,7 @@ function draw() {
     if (drawAgain) {
         window.requestAnimationFrame(draw);
     }
+    FPS.frame();
     afterDraw();
 }
 
@@ -944,6 +947,46 @@ module.exports = "precision mediump float;\n\nuniform mediump vec4 pColor; // in
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var display = null;
+var lastDisplayUpdate;
+var frames = 0;
+function enable() {
+    if (display === null) {
+        display = document.querySelector("#fps");
+    }
+    display.classList.add("show");
+    reset();
+}
+exports.enable = enable;
+function disable() {
+    display.classList.remove("show");
+}
+exports.disable = disable;
+function frame() {
+    if (Date.now() - lastDisplayUpdate > 1000) {
+        updateDisplay();
+        frames = 0;
+    }
+    frames++;
+}
+exports.frame = frame;
+function reset() {
+    lastDisplayUpdate = Date.now();
+    frames = 0;
+}
+function updateDisplay() {
+    lastDisplayUpdate = Date.now();
+    display.innerHTML = frames.toString();
+}
+
+
+/***/ }),
+/* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 var InputMethods;
 (function (InputMethods) {
     InputMethods[InputMethods["MOUSE"] = 0] = "MOUSE";
@@ -1021,7 +1064,7 @@ document.addEventListener("keyup", function (e) {
 
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

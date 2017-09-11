@@ -1,5 +1,6 @@
 import Model from "../Model/Model";
 import * as Renderer from "./Renderer";
+import * as FPS from "./FPS";
 
 var canvas: HTMLCanvasElement;
 var drawAgain: boolean = false;
@@ -25,6 +26,8 @@ export function init(model:Model, afterDrawHook:() => void) {
 		Renderer.resize(w, h);
 		if (!drawAgain) { Renderer.draw(); }
 	});
+
+	FPS.enable();
 }
 
 export function startDrawLoop(drawLoop:boolean = true) {
@@ -42,6 +45,8 @@ function draw(): void {
 	if (drawAgain) {
 		window.requestAnimationFrame(draw);
 	}
+
+	FPS.frame();
 
 	afterDraw();
 }
