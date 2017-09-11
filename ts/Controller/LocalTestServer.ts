@@ -1,8 +1,14 @@
-import { Connection } from "./IConnection";
-import { IServerGameStateUpdate, IServerGameStart } from "./ICommunication";
-import Model from "../Model/Model";
+import {
+	Connection,
+	GameStateUpdateListener
+} from "./IConnection";
 
-//type ServerGameUpdateHandler = (data: IServerGameStateUpdate) => void;
+import {
+	IServerGameStateUpdate, 
+	IServerGameStart 
+} from "./ICommunication";
+
+import Model from "../Model/Model";
 
 const UPDATE_RATE = 100;
 
@@ -12,6 +18,7 @@ export default class LocalTestServer implements Connection {
 	private updateInterval: number;
 	private RoundStart: number;
 	private Rotation: number = 0.0;
+	private callback:GameStateUpdateListener = null;
 
 	public constructor() {
 		this.RoundStart = Date.now() + 3;
@@ -29,17 +36,19 @@ export default class LocalTestServer implements Connection {
 				this.updateInterval = setInterval(() => {
 					let time: number = Date.now() - this.RoundStart;
 					this.Rotation += 0.01;
-		
-					/*this.updateHandler({
-						type: "state",
-						time: time,
-						pdata: [{
-							pos: { x: 0, y: 0 },
-							vel: { x: 0, y: 0 },
-							alv: true
-						}],
-						rotation: this.Rotation
-					});*/
+					
+					if(this.callback) {
+						this.callback({
+							type: "state",
+							time: time,
+							pdata: [{
+								pos: { x: 0, y: 0 },
+								vel: { x: 0, y: 0 },
+								alv: true
+							}],
+							rotation: this.Rotation
+						});
+					}
 				}, UPDATE_RATE);
 
 				resolve();
@@ -73,6 +82,8 @@ export default class LocalTestServer implements Connection {
 
 		this.connected = false;
 		clearInterval(this.updateInterval);
+
+		this.callback = null;
 	}
 
 	public isConnected() {
@@ -81,6 +92,12 @@ export default class LocalTestServer implements Connection {
 
 	public updateState(model:Model) {
 		// ignore data for now
+	}
+
+	public setStateUpdateListener(listener: GameStateUpdateListener) {
+		if(this.isConnected()) {
+			this.callback = listener;
+		}
 	}
 
 }

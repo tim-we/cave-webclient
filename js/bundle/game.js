@@ -276,14 +276,13 @@ const UserInput = __webpack_require__(22);
 const LocalTestServer_1 = __webpack_require__(23);
 var connection = new LocalTestServer_1.default();
 var model = null;
-var tmpStart;
 window.addEventListener("load", () => {
-    connection.connect().then(() => {
-        return connection.waitForStart();
-    }).then((data) => {
+    connection.connect()
+        .then(() => connection.waitForStart())
+        .then((data) => {
         console.log("Starting game!");
         model = new Model_1.default(data);
-        tmpStart = Date.now();
+        connection.setStateUpdateListener(stateUpdateHandler);
         View.init(model, mainloop);
         mainloop();
         View.startDrawLoop();
@@ -295,16 +294,13 @@ function mainloop() {
         if (model.Player.Alive) {
             model.Player.Force = UserInput.isPressed();
         }
-        model.updateData({
-            type: "state",
-            time: Date.now() - tmpStart,
-            pdata: [{
-                    pos: { x: 0, y: 0 },
-                    vel: { x: 0, y: 0 },
-                    alv: true
-                }],
-            rotation: 0
-        });
+    }
+}
+function stateUpdateHandler(data) {
+    if (data.type === "state") {
+        if (model) {
+            model.updateData(data);
+        }
     }
 }
 
@@ -1076,6 +1072,7 @@ class LocalTestServer {
         this.connected = false;
         this.gameStarted = false;
         this.Rotation = 0.0;
+        this.callback = null;
         this.RoundStart = Date.now() + 3;
     }
     connect() {
@@ -1089,6 +1086,18 @@ class LocalTestServer {
                 this.updateInterval = setInterval(() => {
                     let time = Date.now() - this.RoundStart;
                     this.Rotation += 0.01;
+                    if (this.callback) {
+                        this.callback({
+                            type: "state",
+                            time: time,
+                            pdata: [{
+                                    pos: { x: 0, y: 0 },
+                                    vel: { x: 0, y: 0 },
+                                    alv: true
+                                }],
+                            rotation: this.Rotation
+                        });
+                    }
                 }, UPDATE_RATE);
                 resolve();
             }
@@ -1118,11 +1127,17 @@ class LocalTestServer {
         }
         this.connected = false;
         clearInterval(this.updateInterval);
+        this.callback = null;
     }
     isConnected() {
         return this.connected;
     }
     updateState(model) {
+    }
+    setStateUpdateListener(listener) {
+        if (this.isConnected()) {
+            this.callback = listener;
+        }
     }
 }
 exports.default = LocalTestServer;
