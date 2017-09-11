@@ -5,32 +5,25 @@ import { IPlayerInitData, IPlayerData } from "../Controller/ICommunication";
 import Vector from "./Vector";
 import Color from "../View/Color";
 
-export default class OnlinePlayer extends AbstractPlayer {
+let tmp:Vector = new Vector(0.0, 0.0);
 
-	public PDelta: Vector; // vector pointing to the next position
-	public PDeltaLength: number;
+export default class OnlinePlayer extends AbstractPlayer {
 
 	constructor(data:IPlayerInitData, zPos: number) {
 		super(data, zPos);
-
-		this.PDelta = new Vector(0, 0);
-		this.PDeltaLength = 0;
-
-		this.Color = new Color(1.0, 0.2, 0.0);
 	}
 
-	public updateData(data:IPlayerData): void {
-		this.PDelta.diff2d(data.pos.x, data.pos.y);
-		this.PDeltaLength = this.PDelta.length();
+	// ServerGameStateUpdate
+	public updateData(data:IPlayerData, time:number): void {
+		console.assert(time > 0.0);
+
+		this.Position.diff2d(data.pos.x, data.pos.y, tmp);
+
+		tmp.scale(1.0 / time);
+
+		this.updateVelocity(tmp.getX(), tmp.getY());
 
 		if (this.Alive && !data.alv) { super.die(); }
-	}
-
-	public move(a: number) {
-		// move
-		Vector.axpy(a, this.PDelta, this.Position);
-
-		this.updateTail();
 	}
 
 }

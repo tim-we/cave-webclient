@@ -17,6 +17,8 @@ export default class Model {
 
 	public Map: Map;
 
+	private Speed:number = 0.42; // main axis velocity
+
 	public Rotation: number = 0.1 * Math.PI;
 	private RotationDelta: number = 0.0;
 
@@ -66,10 +68,14 @@ export default class Model {
 		this.NextTime = data.time;
 
 		this.OnlinePlayers.forEach((p:OnlinePlayer, i:number) => {
-			p.updateData(data.pdata[i]);
+			p.updateData(data.pdata[i], this.TimeDelta);
 		});
 
 		this.RotationDelta = data.rotation - this.Rotation;
+
+		if(data.speed !== this.Speed) {
+			// TODO: update velocity for all players
+		}
 	}
 
 	public update(): void {
@@ -79,14 +85,14 @@ export default class Model {
 		let d: number = performance.now() - this.LastUpdate; //ms
 		this.LastUpdate = performance.now();
 
-		// update current model time
-		this.Time = Math.min(this.Time + d, this.NextTime);
+		let t:number = d / 1000;
 
-		let t: number = d / this.TimeDelta;
-		t = Math.max(Math.min(t, 2.0), 0.0);
+		// update current model time
+		this.Time = Math.min(this.Time + t, this.NextTime);
 
 		// move players
 		this.Player.move(t);
+		this.Player.update(t);
 
 		this.OnlinePlayers.forEach(p => {
 			p.move(t);

@@ -43,10 +43,10 @@ export default class LocalTestServer implements Connection {
 							time: time,
 							pdata: [{
 								pos: { x: 0, y: 0 },
-								vel: { x: 0, y: 0 },
 								alv: true
 							}],
-							rotation: this.Rotation
+							rotation: this.Rotation,
+							speed: 0.42
 						});
 					}
 				}, UPDATE_RATE);

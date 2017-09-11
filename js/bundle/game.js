@@ -70,51 +70,21 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-class Color {
-    constructor(r, g, b, a = 1.0) {
-        this.red = r;
-        this.green = g;
-        this.blue = b;
-        this.alpha = a;
-    }
-    setClearColor(gl) {
-        gl.clearColor(this.red, this.green, this.blue, this.alpha);
-    }
-    setUniform(gl, location) {
-        gl.uniform4f(location, this.red, this.green, this.blue, this.alpha);
-    }
-    static interpolate(a, b, x, result) {
-        let xa = 1.0 - x;
-        result.red = xa * a.red + x * b.red;
-        result.green = xa * a.green + x * b.green;
-        result.blue = xa * a.blue + x * b.blue;
-        result.alpha = xa * a.alpha + x * b.alpha;
-    }
-}
-exports.default = Color;
-
-
-/***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const Vector_1 = __webpack_require__(2);
-const Color_1 = __webpack_require__(0);
+const Vector_1 = __webpack_require__(1);
+const Color_1 = __webpack_require__(3);
 exports.TAILLENGTH = 80;
 const TAILNODESIZE = 2 * (2 + 1);
-const TAILWIDTH = 0.006;
-var tmp1 = new Vector_1.default();
-var tmp2 = new Vector_1.default();
+const TAILWIDTH = 0.005;
+const STARTSPEED = new Vector_1.default(1.0, 0);
+var tmp = new Vector_1.default();
 class AbstractPlayer {
     constructor(data, zPos) {
-        this.Color = new Color_1.default(0.0, 0.5, 1.0);
-        this.Position = new Vector_1.default(0, 0);
-        this.PreviousPosition = this.Position.clone();
+        this.Position = new Vector_1.default(0.0, 0.0);
+        this.Velocity = STARTSPEED.clone();
+        this.VelOrthoDir = new Vector_1.default(0.0, 0.0);
         this.Z = zPos;
         this.Alive = true;
+        this.Color = Color_1.default.create(data.color);
         this.Tail = new Float32Array(exports.TAILLENGTH * TAILNODESIZE);
         let h = 1.0 / (exports.TAILLENGTH - 1);
         for (let i = 0; i < exports.TAILLENGTH; i++) {
@@ -122,19 +92,24 @@ class AbstractPlayer {
             this.Tail[i * TAILNODESIZE + 5] = i * h;
         }
     }
+    updateVelocity(x, y) {
+        this.Velocity.set(x, y);
+        this.Velocity.ortho(this.VelOrthoDir);
+        this.VelOrthoDir.scale(1.0 / this.VelOrthoDir.length());
+    }
+    move(t) {
+        Vector_1.default.axpy(t, this.Velocity, this.Position);
+        this.updateTail();
+    }
     updateTail() {
-        Vector_1.default.axpy2(-1, this.PreviousPosition, this.Position, tmp1);
-        tmp1.ortho(tmp1);
-        tmp1.scale(1.0 / tmp1.length());
-        shiftTailData(this.Tail);
         let n = this.Tail.length;
-        Vector_1.default.axpy2(TAILWIDTH, tmp1, this.Position, tmp2);
-        this.Tail[n - 6] = tmp2.getX();
-        this.Tail[n - 5] = tmp2.getY();
-        Vector_1.default.axpy2(-TAILWIDTH, tmp1, this.Position, tmp2);
-        this.Tail[n - 3] = tmp2.getX();
-        this.Tail[n - 2] = tmp2.getY();
-        this.PreviousPosition.copyFrom(this.Position);
+        shiftTailData(this.Tail);
+        Vector_1.default.axpy2(TAILWIDTH, this.VelOrthoDir, this.Position, tmp);
+        this.Tail[n - 6] = tmp.getX();
+        this.Tail[n - 5] = tmp.getY();
+        Vector_1.default.axpy2(-TAILWIDTH, this.VelOrthoDir, this.Position, tmp);
+        this.Tail[n - 3] = tmp.getX();
+        this.Tail[n - 2] = tmp.getY();
     }
     die() {
         this.Alive = false;
@@ -159,7 +134,7 @@ function shiftTailData(data) {
 
 
 /***/ }),
-/* 2 */
+/* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -177,9 +152,13 @@ class Vector {
     getY() {
         return this.data[1];
     }
-    diff2d(x, y) {
-        this.data[0] = x - this.data[0];
-        this.data[1] = y - this.data[1];
+    set(x, y) {
+        this.data[0] = x;
+        this.data[1] = y;
+    }
+    diff2d(x, y, delta) {
+        delta.data[0] = x - this.data[0];
+        delta.data[1] = y - this.data[1];
     }
     length() {
         return Math.sqrt(this.data[0] * this.data[0] + this.data[1] * this.data[1]);
@@ -222,7 +201,7 @@ exports.default = Vector;
 
 
 /***/ }),
-/* 3 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -261,6 +240,40 @@ function createProgramFromSource(gl, vssource, fssource) {
     return shaderProgram;
 }
 exports.createProgramFromSource = createProgramFromSource;
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+class Color {
+    constructor(r, g, b, a = 1.0) {
+        this.red = r;
+        this.green = g;
+        this.blue = b;
+        this.alpha = a;
+    }
+    setClearColor(gl) {
+        gl.clearColor(this.red, this.green, this.blue, this.alpha);
+    }
+    setUniform(gl, location) {
+        gl.uniform4f(location, this.red, this.green, this.blue, this.alpha);
+    }
+    static interpolate(a, b, x, result) {
+        let xa = 1.0 - x;
+        result.red = xa * a.red + x * b.red;
+        result.green = xa * a.green + x * b.green;
+        result.blue = xa * a.blue + x * b.blue;
+        result.alpha = xa * a.alpha + x * b.alpha;
+    }
+    static create(preset) {
+        return new Color(1.0, 0.2, 0.0);
+    }
+}
+exports.default = Color;
 
 
 /***/ }),
@@ -317,6 +330,7 @@ const OnlinePlayer_1 = __webpack_require__(7);
 const Map_1 = __webpack_require__(8);
 class Model {
     constructor(data) {
+        this.Speed = 0.42;
         this.Rotation = 0.1 * Math.PI;
         this.RotationDelta = 0.0;
         let n = data.playerInitData.length;
@@ -348,9 +362,11 @@ class Model {
         this.TimeDelta = Math.max(32, data.time - this.Time);
         this.NextTime = data.time;
         this.OnlinePlayers.forEach((p, i) => {
-            p.updateData(data.pdata[i]);
+            p.updateData(data.pdata[i], this.TimeDelta);
         });
         this.RotationDelta = data.rotation - this.Rotation;
+        if (data.speed !== this.Speed) {
+        }
     }
     update() {
         if (this.TimeDelta <= 0.0) {
@@ -358,10 +374,10 @@ class Model {
         }
         let d = performance.now() - this.LastUpdate;
         this.LastUpdate = performance.now();
-        this.Time = Math.min(this.Time + d, this.NextTime);
-        let t = d / this.TimeDelta;
-        t = Math.max(Math.min(t, 2.0), 0.0);
+        let t = d / 1000;
+        this.Time = Math.min(this.Time + t, this.NextTime);
         this.Player.move(t);
+        this.Player.update(t);
         this.OnlinePlayers.forEach(p => {
             p.move(t);
         });
@@ -377,24 +393,22 @@ exports.default = Model;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const AbstractPlayer_1 = __webpack_require__(1);
-const Vector_1 = __webpack_require__(2);
+const AbstractPlayer_1 = __webpack_require__(0);
+const Vector_1 = __webpack_require__(1);
 const ACCELERATION = new Vector_1.default(0.0, 0.01);
-const STARTSPEED = new Vector_1.default(1.0, 0);
-;
 var tmp = 0;
 class Player extends AbstractPlayer_1.default {
     constructor(data, index) {
         super(data, 0);
         this.Force = false;
+        this.Position.set(0.0, -0.2);
         this.Index = index;
-        this.Velocity = STARTSPEED.clone();
     }
-    move(a) {
-        demo(a, this);
-        super.updateTail();
+    update(t) {
+        tmp += 3 * t;
+        this.updateVelocity(0.5 * Math.cos(0.8 * tmp), 0.42 * Math.sin(0.7 * tmp));
     }
-    updateData(data) {
+    updateData(data, time) {
         throw new Error("Method not implemented.");
     }
     die() {
@@ -402,12 +416,6 @@ class Player extends AbstractPlayer_1.default {
     }
 }
 exports.default = Player;
-function demo(a, player) {
-    tmp += a;
-    let v = new Vector_1.default(Math.sin(0.1 * tmp), Math.sin(0.2 * tmp));
-    v.scale(0.5);
-    player.Position.copyFrom(v);
-}
 
 
 /***/ }),
@@ -417,26 +425,21 @@ function demo(a, player) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const AbstractPlayer_1 = __webpack_require__(1);
-const Vector_1 = __webpack_require__(2);
-const Color_1 = __webpack_require__(0);
+const AbstractPlayer_1 = __webpack_require__(0);
+const Vector_1 = __webpack_require__(1);
+let tmp = new Vector_1.default(0.0, 0.0);
 class OnlinePlayer extends AbstractPlayer_1.default {
     constructor(data, zPos) {
         super(data, zPos);
-        this.PDelta = new Vector_1.default(0, 0);
-        this.PDeltaLength = 0;
-        this.Color = new Color_1.default(1.0, 0.2, 0.0);
     }
-    updateData(data) {
-        this.PDelta.diff2d(data.pos.x, data.pos.y);
-        this.PDeltaLength = this.PDelta.length();
+    updateData(data, time) {
+        console.assert(time > 0.0);
+        this.Position.diff2d(data.pos.x, data.pos.y, tmp);
+        tmp.scale(1.0 / time);
+        this.updateVelocity(tmp.getX(), tmp.getY());
         if (this.Alive && !data.alv) {
             super.die();
         }
-    }
-    move(a) {
-        Vector_1.default.axpy(a, this.PDelta, this.Position);
-        this.updateTail();
     }
 }
 exports.default = OnlinePlayer;
@@ -727,8 +730,8 @@ exports.default = Matrix;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShaderTools_1 = __webpack_require__(3);
-const Color_1 = __webpack_require__(0);
+const ShaderTools_1 = __webpack_require__(2);
+const Color_1 = __webpack_require__(3);
 var data = null;
 var bufferVersion = -1;
 var gl = null;
@@ -797,8 +800,7 @@ module.exports = "precision mediump float;\n\n//varying vec4 color;\n\nvoid main
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShaderTools_1 = __webpack_require__(3);
-const Color_1 = __webpack_require__(0);
+const ShaderTools_1 = __webpack_require__(2);
 const TailRenderer = __webpack_require__(16);
 const RADIUS = 0.05;
 var gl = null;
@@ -806,7 +808,6 @@ var buffer = null;
 var program = null;
 var vertexAttribPos = -1;
 var vertexAttribCSQ = -1;
-var color = new Color_1.default(0.0, 0.5, 1.0);
 var uniformColor = null;
 var uniformPM = null;
 var uniformZ = null;
@@ -857,7 +858,7 @@ function draw(transform, player) {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
     transform.uniform(gl, uniformPM);
     gl.uniform1f(uniformZ, player.Z);
-    color.setUniform(gl, uniformColor);
+    player.Color.setUniform(gl, uniformColor);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.disable(gl.BLEND);
 }
@@ -871,8 +872,8 @@ exports.draw = draw;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShaderTools_1 = __webpack_require__(3);
-const AbstractPlayer_1 = __webpack_require__(1);
+const ShaderTools_1 = __webpack_require__(2);
+const AbstractPlayer_1 = __webpack_require__(0);
 var gl = null;
 var buffer = null;
 var program = null;
@@ -1092,10 +1093,10 @@ class LocalTestServer {
                             time: time,
                             pdata: [{
                                     pos: { x: 0, y: 0 },
-                                    vel: { x: 0, y: 0 },
                                     alv: true
                                 }],
-                            rotation: this.Rotation
+                            rotation: this.Rotation,
+                            speed: 0.42
                         });
                     }
                 }, UPDATE_RATE);

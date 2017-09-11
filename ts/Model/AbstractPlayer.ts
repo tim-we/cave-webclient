@@ -8,17 +8,19 @@ import {
 
 export const TAILLENGTH = 80;
 const TAILNODESIZE = 2 * (2 + 1);
-const TAILWIDTH = 0.006;
+const TAILWIDTH = 0.005;
+const STARTSPEED: Vector = new Vector(1.0, 0);
 
-var tmp1: Vector = new Vector();
-var tmp2: Vector = new Vector();
+var tmp: Vector = new Vector();
 
 export default abstract class AbstractPlayer {
 	public Name: string;
-	public Color: Color = new Color(0.0, 0.5, 1.0);
+	public Color: Color;
 
 	public Position: Vector; // current (interpolated) position
-	private PreviousPosition: Vector;
+	private Velocity:Vector;
+	private VelOrthoDir:Vector;
+
 	public Z: number;
 
 	public Alive: boolean;
@@ -32,12 +34,13 @@ export default abstract class AbstractPlayer {
 	*/
 
 	constructor(data:IPlayerInitData, zPos:number) {
-		this.Position = new Vector(0, 0);
-		this.PreviousPosition = this.Position.clone();
+		this.Position = new Vector(0.0, 0.0);
+		this.Velocity = STARTSPEED.clone();
+		this.VelOrthoDir = new Vector(0.0, 0.0);
 		this.Z = zPos;
 		this.Alive = true;
 
-		// TODO: data.color
+		this.Color = Color.create(data.color);
 
 		this.Tail = new Float32Array(TAILLENGTH * TAILNODESIZE);
 
@@ -49,32 +52,34 @@ export default abstract class AbstractPlayer {
 		}
 	}
 
-	public abstract move(a: number);
+	protected updateVelocity(x:number, y:number):void {
+		this.Velocity.set(x,y);
+
+		this.Velocity.ortho(this.VelOrthoDir);
+		this.VelOrthoDir.scale(1.0 / this.VelOrthoDir.length());
+	}
+
+	public move(t: number) {
+		Vector.axpy(t, this.Velocity, this.Position);
+
+		this.updateTail();
+	}
 
 	protected updateTail() {
-		// tmp1 = this.Position - this.PreviousPosition
-		Vector.axpy2(-1, this.PreviousPosition, this.Position, tmp1);
-		tmp1.ortho(tmp1);
-		
-		tmp1.scale(1.0 / tmp1.length());
-
-		shiftTailData(this.Tail);
-		// shift tail points (keep intensities)
-
 		let n: number = this.Tail.length;
 
+		// shift tail points (keep intensities)
+		shiftTailData(this.Tail);
+
 		// right point
-		Vector.axpy2(TAILWIDTH, tmp1, this.Position, tmp2);
-		this.Tail[n - 6] = tmp2.getX();
-		this.Tail[n - 5] = tmp2.getY();
+		Vector.axpy2(TAILWIDTH, this.VelOrthoDir, this.Position, tmp);
+		this.Tail[n - 6] = tmp.getX();
+		this.Tail[n - 5] = tmp.getY();
 
 		// left point
-		Vector.axpy2(-TAILWIDTH, tmp1, this.Position, tmp2);
-		this.Tail[n - 3] = tmp2.getX();
-		this.Tail[n - 2] = tmp2.getY();
-
-		// update previous position
-		this.PreviousPosition.copyFrom(this.Position);
+		Vector.axpy2(-TAILWIDTH, this.VelOrthoDir, this.Position, tmp);
+		this.Tail[n - 3] = tmp.getX();
+		this.Tail[n - 2] = tmp.getY();
 	}
 
 	protected die() {
@@ -85,7 +90,7 @@ export default abstract class AbstractPlayer {
 		return TAILLENGTH * 2;
 	}
 
-	public abstract updateData(data: IPlayerData): void;
+	public abstract updateData(data: IPlayerData, time:number): void;
 
 }
 

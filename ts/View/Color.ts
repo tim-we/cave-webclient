@@ -28,4 +28,8 @@ export default class Color {
 		result.blue  = xa * a.blue  + x * b.blue;
 		result.alpha = xa * a.alpha + x * b.alpha;
 	}
+
+	public static create(preset:number):Color {
+		return new Color(1.0, 0.2, 0.0);
+	}
 }

@@ -14,10 +14,15 @@ export default class Vector {
 		return this.data[1];
 	}
 
+	public set(x:number, y:number):void {
+		this.data[0] = x;
+		this.data[1] = y;
+	}
+
 	// this <- Vector(x,y) - this
-	public diff2d(x:number, y:number): void {
-		this.data[0] = x - this.data[0];
-		this.data[1] = y - this.data[1];
+	public diff2d(x:number, y:number, delta:Vector): void {
+		delta.data[0] = x - this.data[0];
+		delta.data[1] = y - this.data[1];
 	}
 
 	public length(): number {

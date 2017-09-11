@@ -15,8 +15,6 @@ var program: WebGLProgram = null;
 var vertexAttribPos: number = -1;
 var vertexAttribCSQ: number = -1;
 
-var color: Color = new Color(0.0, 0.5, 1.0);
-
 var uniformColor: WebGLUniformLocation = null;
 var uniformPM: WebGLUniformLocation = null;
 var uniformZ: WebGLUniformLocation = null;
@@ -87,7 +85,7 @@ export function draw(transform: Matrix, player: AbstractPlayer) {
 
 	transform.uniform(gl, uniformPM);
 	gl.uniform1f(uniformZ, player.Z);
-	color.setUniform(gl, uniformColor);
+	player.Color.setUniform(gl, uniformColor);
 
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // 2 triangles
 

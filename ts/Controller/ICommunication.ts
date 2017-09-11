@@ -5,7 +5,6 @@ export interface IVector {
 
 export interface IPlayerData {
 	pos: IVector;
-	vel: IVector;
 	alv: boolean; // alive
 }
 
@@ -51,6 +50,7 @@ export interface IServerGameStateUpdate extends IServerMessage {
 	time: number;
 	pdata: IPlayerData[];
 	rotation: number;
+	speed: number; // main axis velocity
 }
 
 export interface IServerMapUpdate extends IServerMessage {

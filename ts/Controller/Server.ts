@@ -6,6 +6,7 @@ import {
 import {
 	IClientStateUpdate,
 	IServerMessage,
+	IServerGameStateUpdate,
 	IServerGameStart,
 	IServerLogMessage,
 	IServerRejection
@@ -19,7 +20,6 @@ export default class Server implements Connection {
 	private ws: WebSocket = null;
 	private url: string;
 	private wsMsgHandler:wsMessageHandler;
-	private stateUpdateListener:GameStateUpdateListener = null;
 
 	public constructor(secure:boolean = false, host:string = "localhost", port:number = 8000) {
 		this.url = (secure ? "ws":"wss") + "://" + host + ":" + port;
@@ -39,7 +39,7 @@ export default class Server implements Connection {
 
 				this.ws.onclose = () => {
 					this.ws = null;
-					this.stateUpdateListener = null;
+					this.wsMsgHandler = null;
 				};
 
 				this.ws.onmessage = (e:MessageEvent) => {
@@ -91,8 +91,6 @@ export default class Server implements Connection {
 				this.ws.close();
 			}
 		}
-
-		this.stateUpdateListener = null;
 	}
 
 	public isConnected() {
@@ -111,7 +109,11 @@ export default class Server implements Connection {
 
 	public setStateUpdateListener(listener: GameStateUpdateListener) {
 		if(this.isConnected()) {
-			this.stateUpdateListener = listener;
+			this.wsMsgHandler = (data:IServerMessage) => {
+				if(data.type === "state") {
+					listener(<IServerGameStateUpdate>data);
+				}
+			};
 		}
 	}
 }
