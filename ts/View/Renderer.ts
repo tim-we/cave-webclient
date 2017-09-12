@@ -61,6 +61,8 @@ export function resize(width:number, height:number): void {
 		projMatrix.makeScale(1.0, width/height, 1.0, false);
 	}
 
+	projMatrix.setEntry(3, 2, 1.0);
+
 	gl.viewport(0, 0, width, height);
 }
 

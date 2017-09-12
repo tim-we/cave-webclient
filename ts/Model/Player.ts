@@ -17,7 +17,7 @@ export default class Player extends AbstractPlayer {
 	constructor(data:IPlayerInitData, index: number) {
 		super(data, 0);
 
-		this.Position.set(0.0, -0.2);
+		this.Position.set(-0.35, -0.2);
 
 		this.Index = index;
 	}

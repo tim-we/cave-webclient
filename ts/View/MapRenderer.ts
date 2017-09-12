@@ -58,21 +58,30 @@ export function draw(proj:Matrix): void {
 	// do we have data to draw?
 	if (!data) { return; }
 
+	gl.enable(gl.BLEND);
+	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
 	gl.useProgram(program);
 	gl.enableVertexAttribArray(vertexPosAttrib);
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.vertexAttribPointer(vertexPosAttrib, 2, gl.FLOAT, false, 0, 0);
-
-	// send projection matrix to GPU
-	proj.uniform(gl, uniformPM);
 	
-	// set z position
-	gl.uniform1f(uniformZ, 0.5);
-
-	gl.drawArrays(gl.TRIANGLES, 0, 3 * data.numTriangles());
+	for(let i=1; i<=4; i++) {
+		drawLayer(proj, 0.05 + i*0.1);
+	}
 
 	if (bufferVersion < data.version) {
 		// map data has been updated -> update buffer (after draw is complete)
 		setTimeout(updateBuffer, 0);
 	}
+}
+
+function drawLayer(proj:Matrix, z:number):void {
+	// set z position
+	gl.uniform1f(uniformZ, z);
+
+	// send projection matrix to GPU
+	proj.uniform(gl, uniformPM);
+
+	gl.drawArrays(gl.TRIANGLES, 0, 3 * data.numTriangles());
 }

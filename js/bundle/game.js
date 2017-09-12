@@ -401,7 +401,7 @@ class Player extends AbstractPlayer_1.default {
     constructor(data, index) {
         super(data, 0);
         this.Force = false;
-        this.Position.set(0.0, -0.2);
+        this.Position.set(-0.35, -0.2);
         this.Index = index;
     }
     update(t) {
@@ -619,6 +619,7 @@ function resize(width, height) {
     else {
         projMatrix.makeScale(1.0, width / height, 1.0, false);
     }
+    projMatrix.setEntry(3, 2, 1.0);
     gl.viewport(0, 0, width, height);
 }
 exports.resize = resize;
@@ -767,18 +768,25 @@ function draw(proj) {
     if (!data) {
         return;
     }
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.useProgram(program);
     gl.enableVertexAttribArray(vertexPosAttrib);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.vertexAttribPointer(vertexPosAttrib, 2, gl.FLOAT, false, 0, 0);
-    proj.uniform(gl, uniformPM);
-    gl.uniform1f(uniformZ, 0.5);
-    gl.drawArrays(gl.TRIANGLES, 0, 3 * data.numTriangles());
+    for (let i = 1; i <= 4; i++) {
+        drawLayer(proj, 0.05 + i * 0.1);
+    }
     if (bufferVersion < data.version) {
         setTimeout(updateBuffer, 0);
     }
 }
 exports.draw = draw;
+function drawLayer(proj, z) {
+    gl.uniform1f(uniformZ, z);
+    proj.uniform(gl, uniformPM);
+    gl.drawArrays(gl.TRIANGLES, 0, 3 * data.numTriangles());
+}
 
 
 /***/ }),
@@ -791,7 +799,7 @@ module.exports = "attribute vec2 vPosition;\n\nuniform float zPos;\n\n//varying 
 /* 14 */
 /***/ (function(module, exports) {
 
-module.exports = "precision mediump float;\n\n//varying vec4 color;\n\nvoid main(void) {\n\t//gl_FragColor = color;\n\tgl_FragColor = vec4(0.0, 0.05, 0.01, 1.0); // blue\n}"
+module.exports = "precision mediump float;\n\n//varying vec4 color;\n\nvoid main(void) {\n\t//gl_FragColor = color;\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, 0.6); // blue\n}"
 
 /***/ }),
 /* 15 */
