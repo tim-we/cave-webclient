@@ -12,7 +12,7 @@ import {
 	IServerGameStart
 } from "./ICommunication";
 
-var connection: Connection = new LocalTestServer();
+var connection: Connection = new Server(); //new LocalTestServer();
 var model: Model = null;
 
 //var tmp: number = 0;
@@ -20,7 +20,9 @@ var model: Model = null;
 window.addEventListener("load", () => {
 
 	connection.connect()
-	 .then(() => connection.waitForStart())
+	 .then(() => connection.waitForStart(), (reason) => {
+		 console.log("Connection failed: " + reason);
+	 })
 	 .then((data:IServerGameStart) => {
 		console.log("Starting game!");
 
@@ -33,6 +35,8 @@ window.addEventListener("load", () => {
 		mainloop();
 		
 		View.startDrawLoop();
+	}).catch((reason) => {
+		console.log("Something went wrong: " + reason);
 	});
 	
 });

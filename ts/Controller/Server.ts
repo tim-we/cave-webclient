@@ -21,17 +21,15 @@ export default class Server implements Connection {
 	private url: string;
 	private wsMsgHandler:wsMessageHandler;
 
-	public constructor(secure:boolean = false, host:string = "localhost", port:number = 8000) {
-		this.url = (secure ? "ws":"wss") + "://" + host + ":" + port;
-
-		this.connect();
+	public constructor(secure:boolean = false, host:string = "localhost", port:number = 8080) {
+		this.url = (secure ? "wss":"ws") + "://" + host + ":" + port;
 	}
 
 	public connect():Promise<void> {
 
 		return new Promise<void>((resolve, reject) => {
-			if(!this.isConnected()) {
-				reject();
+			if(this.isConnected()) {
+				reject("Already connected.");
 			} else {
 				console.log("Connecting...");
 				this.ws = new WebSocket(this.url);
@@ -43,7 +41,16 @@ export default class Server implements Connection {
 				};
 
 				this.ws.onmessage = (e:MessageEvent) => {
-					let data:IServerMessage = JSON.parse(e.data.toString());
+					let data:IServerMessage;
+					
+					try {
+						data = JSON.parse(e.data.toString());
+					} catch(err) {
+						console.error("Unable to parse server message!");
+						console.log(err);
+						console.log(e);
+						return;
+					}
 
 					if(data.type === "msg") {
 						console.log("Server Message: " + (<IServerLogMessage>data).msg);
@@ -79,7 +86,7 @@ export default class Server implements Connection {
 					}
 				};
 			} else {
-				reject();
+				reject("WFRS: Not connected.");
 			}
 		});
 	}

@@ -286,12 +286,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Model_1 = __webpack_require__(5);
 const View = __webpack_require__(9);
 const UserInput = __webpack_require__(22);
-const LocalTestServer_1 = __webpack_require__(23);
-var connection = new LocalTestServer_1.default();
+const Server_1 = __webpack_require__(23);
+var connection = new Server_1.default();
 var model = null;
 window.addEventListener("load", () => {
     connection.connect()
-        .then(() => connection.waitForStart())
+        .then(() => connection.waitForStart(), (reason) => {
+        console.log("Connection failed: " + reason);
+    })
         .then((data) => {
         console.log("Starting game!");
         model = new Model_1.default(data);
@@ -299,6 +301,8 @@ window.addEventListener("load", () => {
         View.init(model, mainloop);
         mainloop();
         View.startDrawLoop();
+    }).catch((reason) => {
+        console.log("Something went wrong: " + reason);
     });
 });
 function mainloop() {
@@ -1075,81 +1079,106 @@ document.addEventListener("keyup", function (e) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const UPDATE_RATE = 100;
-class LocalTestServer {
-    constructor() {
-        this.connected = false;
-        this.gameStarted = false;
-        this.Rotation = 0.0;
-        this.callback = null;
-        this.RoundStart = Date.now() + 3;
+class Server {
+    constructor(secure = false, host = "localhost", port = 8080) {
+        this.ws = null;
+        this.url = (secure ? "wss" : "ws") + "://" + host + ":" + port;
     }
     connect() {
         return new Promise((resolve, reject) => {
-            if (this.connected) {
-                reject();
+            if (this.isConnected()) {
+                reject("Already connected.");
             }
             else {
-                this.connected = true;
-                this.gameStarted = false;
-                this.updateInterval = setInterval(() => {
-                    let time = Date.now() - this.RoundStart;
-                    this.Rotation += 0.01;
-                    if (this.callback) {
-                        this.callback({
-                            type: "state",
-                            time: time,
-                            pdata: [{
-                                    pos: { x: 0, y: 0 },
-                                    alv: true
-                                }],
-                            rotation: this.Rotation,
-                            speed: 0.42
-                        });
+                console.log("Connecting...");
+                this.ws = new WebSocket(this.url);
+                console.log("Connected.");
+                this.ws.onclose = () => {
+                    this.ws = null;
+                    this.wsMsgHandler = null;
+                };
+                this.ws.onmessage = (e) => {
+                    let data;
+                    try {
+                        data = JSON.parse(e.data.toString());
                     }
-                }, UPDATE_RATE);
+                    catch (err) {
+                        console.error("Unable to parse server message!");
+                        console.log(err);
+                        console.log(e);
+                        return;
+                    }
+                    if (data.type === "msg") {
+                        console.log("Server Message: " + data.msg);
+                    }
+                    else if (data.type === "reject") {
+                        console.log("Rejected by server! Reason: " + data.reason);
+                    }
+                    else {
+                        if (this.wsMsgHandler) {
+                            this.wsMsgHandler(data);
+                        }
+                        else {
+                            console.warn("Unhandled message!");
+                            console.log(e.data);
+                        }
+                    }
+                };
                 resolve();
             }
         });
     }
     waitForStart() {
+        console.log("Waiting for round start...");
         return new Promise((resolve, reject) => {
-            if (!this.connected || this.gameStarted) {
-                reject();
+            if (this.isConnected()) {
+                this.wsMsgHandler = (data) => {
+                    if (data.type === "start") {
+                        resolve(data);
+                    }
+                    else if (data.type === "lobby") {
+                        console.log("lobby update");
+                    }
+                    else {
+                        reject("Unexpected Server Message (type = " + data.type + ")");
+                    }
+                };
             }
             else {
-                this.gameStarted = true;
-                resolve({
-                    type: "start",
-                    index: 0,
-                    time: -3,
-                    playerInitData: [
-                        { name: "Bob", color: 0 }
-                    ]
-                });
+                reject("WFRS: Not connected.");
             }
         });
     }
     disconnect() {
-        if (this.connected) {
-            return;
+        if (this.ws) {
+            if (this.ws.readyState !== this.ws.CLOSING) {
+                this.ws.close();
+            }
         }
-        this.connected = false;
-        clearInterval(this.updateInterval);
-        this.callback = null;
     }
     isConnected() {
-        return this.connected;
+        return this.ws && this.ws.readyState === this.ws.OPEN;
     }
     updateState(model) {
+        let msg = {
+            type: "state",
+            time: 0,
+            pos: { x: 0, y: 0 },
+            vel: { x: 0, y: 0 },
+            pow: model.Player.Force
+        };
     }
     setStateUpdateListener(listener) {
         if (this.isConnected()) {
-            this.callback = listener;
+            this.wsMsgHandler = (data) => {
+                if (data.type === "state") {
+                    listener(data);
+                }
+            };
         }
     }
 }
-exports.default = LocalTestServer;
+exports.default = Server;
 
 
 /***/ })
