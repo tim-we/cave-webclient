@@ -7,7 +7,7 @@ import {
 export type GameStateUpdateListener = (data: IServerGameStateUpdate) => void;
 
 export interface Connection {
-	connect: () => Promise<void>;
+	connect: (name:string) => Promise<void>;
 
 	waitForStart: () => Promise<IServerGameStart>;
 

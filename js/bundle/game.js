@@ -290,7 +290,7 @@ const Server_1 = __webpack_require__(23);
 var connection = new Server_1.default();
 var model = null;
 window.addEventListener("load", () => {
-    connection.connect()
+    connection.connect("Ulysses")
         .then(() => connection.waitForStart(), (reason) => {
         console.log("Connection failed: " + reason);
     })
@@ -1084,18 +1084,23 @@ class Server {
         this.ws = null;
         this.url = (secure ? "wss" : "ws") + "://" + host + ":" + port;
     }
-    connect() {
+    connect(name) {
         return new Promise((resolve, reject) => {
             if (this.isConnected()) {
-                reject("Already connected.");
+                reject(new Error("Already connected."));
             }
             else {
                 console.log("Connecting...");
                 this.ws = new WebSocket(this.url);
-                console.log("Connected.");
+                this.ws.onopen = () => {
+                    console.log("Connected.");
+                    this.sendInit(name);
+                    resolve();
+                };
                 this.ws.onclose = () => {
                     this.ws = null;
                     this.wsMsgHandler = null;
+                    console.log("Connection closed.");
                 };
                 this.ws.onmessage = (e) => {
                     let data;
@@ -1124,7 +1129,6 @@ class Server {
                         }
                     }
                 };
-                resolve();
             }
         });
     }
@@ -1140,12 +1144,13 @@ class Server {
                         console.log("lobby update");
                     }
                     else {
-                        reject("Unexpected Server Message (type = " + data.type + ")");
+                        reject(new Error("Unexpected Server Message (type = " + data.type + ")"));
                     }
                 };
             }
             else {
-                reject("WFRS: Not connected.");
+                console.log("ready state: " + this.ws.readyState);
+                reject(new Error("WFRS: Not connected."));
             }
         });
     }
@@ -1175,6 +1180,16 @@ class Server {
                     listener(data);
                 }
             };
+        }
+    }
+    sendInit(name) {
+        if (this.isConnected()) {
+            let msg = {
+                type: "init",
+                name: name
+            };
+            this.ws.send(JSON.stringify(msg));
+            console.log("init msg sent");
         }
     }
 }

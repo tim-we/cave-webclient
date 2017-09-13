@@ -19,7 +19,7 @@ var model: Model = null;
 
 window.addEventListener("load", () => {
 
-	connection.connect()
+	connection.connect("Ulysses")
 	 .then(() => connection.waitForStart(), (reason) => {
 		 console.log("Connection failed: " + reason);
 	 })

@@ -5,6 +5,7 @@ import {
 
 import {
 	IClientStateUpdate,
+	IClientInit,
 	IServerMessage,
 	IServerGameStateUpdate,
 	IServerGameStart,
@@ -25,19 +26,27 @@ export default class Server implements Connection {
 		this.url = (secure ? "wss":"ws") + "://" + host + ":" + port;
 	}
 
-	public connect():Promise<void> {
+	public connect(name:string):Promise<void> {
 
 		return new Promise<void>((resolve, reject) => {
 			if(this.isConnected()) {
-				reject("Already connected.");
+				reject(new Error("Already connected."));
 			} else {
 				console.log("Connecting...");
 				this.ws = new WebSocket(this.url);
-				console.log("Connected.");
+				
+				this.ws.onopen = () => {
+					console.log("Connected.");
+
+					this.sendInit(name);
+
+					resolve();
+				};
 
 				this.ws.onclose = () => {
 					this.ws = null;
 					this.wsMsgHandler = null;
+					console.log("Connection closed.");
 				};
 
 				this.ws.onmessage = (e:MessageEvent) => {
@@ -65,8 +74,6 @@ export default class Server implements Connection {
 						}
 					}
 				};
-
-				resolve();
 			}
 		});
 	}
@@ -82,11 +89,12 @@ export default class Server implements Connection {
 					} else if(data.type === "lobby") {
 						console.log("lobby update");
 					} else {
-						reject("Unexpected Server Message (type = " + data.type + ")");
+						reject(new Error("Unexpected Server Message (type = " + data.type + ")"));
 					}
 				};
 			} else {
-				reject("WFRS: Not connected.");
+				console.log("ready state: " + this.ws.readyState);
+				reject(new Error("WFRS: Not connected."));
 			}
 		});
 	}
@@ -121,6 +129,19 @@ export default class Server implements Connection {
 					listener(<IServerGameStateUpdate>data);
 				}
 			};
+		}
+	}
+
+	private sendInit(name:string):void {
+		if(this.isConnected()) {
+			let msg:IClientInit = {
+				type: "init",
+				name: name
+			}
+
+			this.ws.send(JSON.stringify(msg));
+
+			console.log("init msg sent");
 		}
 	}
 }
