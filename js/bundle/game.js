@@ -295,9 +295,9 @@ window.addEventListener("load", () => {
         console.log("Connection failed: " + reason);
     })
         .then((data) => {
+        connection.setUpdateListener(serverUpdateHandler);
         console.log("Starting game!");
         model = new Model_1.default(data);
-        connection.setStateUpdateListener(stateUpdateHandler);
         View.init(model, mainloop);
         mainloop();
         View.startDrawLoop();
@@ -313,11 +313,9 @@ function mainloop() {
         }
     }
 }
-function stateUpdateHandler(data) {
-    if (data.type === "state") {
-        if (model) {
-            model.updateData(data);
-        }
+function serverUpdateHandler(data) {
+    if (model) {
+        model.updateData(data);
     }
 }
 
@@ -362,6 +360,14 @@ class Model {
         this.Map = new Map_1.default();
     }
     updateData(data) {
+        if (data.type === "state") {
+            this.updateState(data);
+        }
+        else if (data.type === "map") {
+            this.Map.update(data);
+        }
+    }
+    updateState(data) {
         console.assert(data.time >= this.NextTime);
         this.TimeDelta = Math.max(32, data.time - this.Time);
         this.NextTime = data.time;
@@ -459,6 +465,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const N = 1;
 const SEGMENT_SIZE = 2 * 3 * 2;
 const SEGMENT_DATA_SIZE = 4 * 2;
+var tmp = new Float32Array(SEGMENT_DATA_SIZE);
 function setUpExampleData(map) {
     console.assert(N === 1, "invalid number of segments");
     let i = 0;
@@ -477,12 +484,35 @@ function setUpExampleData(map) {
 }
 class Map {
     constructor() {
+        this.updateIndex = 0;
+        this.TopData = new Float32Array(2 * 2);
         this.data = new Float32Array(SEGMENT_SIZE * N);
         this.version = 0;
-        setUpExampleData(this);
     }
     numTriangles() {
         return 2 * N;
+    }
+    update(data) {
+        console.assert(data.type === "map" && !!data.data, "Map.update: Illegal Argument!");
+        if (data.data.length % 4 === 0) {
+            let n = data.data.length / 4;
+            let k, o, j;
+            for (let i = 0; i < n; i++) {
+                this.updateIndex = (this.updateIndex + 1) % N;
+                for (k = 0; k < this.TopData.length; k++) {
+                    tmp[k] = this.TopData[k];
+                }
+                o = 4 * i;
+                for (j = 0; j < this.TopData.length; j++) {
+                    tmp[k] = this.TopData[j] = data.data[o + j];
+                    k++;
+                }
+                this.updateSegment(this.updateIndex, tmp);
+            }
+        }
+        else {
+            console.error("Map.update: invalid update length " + data.data.length);
+        }
     }
     updateSegment(segmentIndex, data) {
         console.assert(data.length === SEGMENT_DATA_SIZE, "Invalid segment data.");
@@ -1138,6 +1168,7 @@ class Server {
             if (this.isConnected()) {
                 this.wsMsgHandler = (data) => {
                     if (data.type === "start") {
+                        this.wsMsgHandler = null;
                         resolve(data);
                     }
                     else if (data.type === "lobby") {
@@ -1173,10 +1204,10 @@ class Server {
             pow: model.Player.Force
         };
     }
-    setStateUpdateListener(listener) {
+    setUpdateListener(listener) {
         if (this.isConnected()) {
             this.wsMsgHandler = (data) => {
-                if (data.type === "state") {
+                if (data.type === "state" || data.type === "map") {
                     listener(data);
                 }
             };
@@ -1189,7 +1220,6 @@ class Server {
                 name: name
             };
             this.ws.send(JSON.stringify(msg));
-            console.log("init msg sent");
         }
     }
 }

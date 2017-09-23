@@ -1,10 +1,11 @@
 import Model from "../Model/Model";
 import {
 	IServerGameStart,
-	IServerGameStateUpdate
+	IServerGameStateUpdate,
+	IServerMapUpdate
 } from "./ICommunication";
 
-export type GameStateUpdateListener = (data: IServerGameStateUpdate) => void;
+export type GameUpdateListener = (data: IServerGameStateUpdate | IServerMapUpdate) => void;
 
 export interface Connection {
 	connect: (name:string) => Promise<void>;
@@ -17,5 +18,5 @@ export interface Connection {
 
 	updateState: (model:Model) => void;
 
-	setStateUpdateListener: (x:GameStateUpdateListener) => void;
+	setUpdateListener: (x:GameUpdateListener) => void;
 }

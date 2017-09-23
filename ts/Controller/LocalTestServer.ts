@@ -1,6 +1,6 @@
 import {
 	Connection,
-	GameStateUpdateListener
+	GameUpdateListener
 } from "./IConnection";
 
 import {
@@ -18,7 +18,7 @@ export default class LocalTestServer implements Connection {
 	private updateInterval: number;
 	private RoundStart: number;
 	private Rotation: number = 0.0;
-	private callback:GameStateUpdateListener = null;
+	private callback:GameUpdateListener = null;
 
 	public constructor() {
 		this.RoundStart = Date.now() + 3;
@@ -94,7 +94,7 @@ export default class LocalTestServer implements Connection {
 		// ignore data for now
 	}
 
-	public setStateUpdateListener(listener: GameStateUpdateListener) {
+	public setUpdateListener(listener: GameUpdateListener) {
 		if(this.isConnected()) {
 			this.callback = listener;
 		}

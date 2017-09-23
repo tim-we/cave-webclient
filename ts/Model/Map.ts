@@ -1,6 +1,10 @@
+import { IServerMapUpdate } from "../Controller/ICommunication";
+
 const N: number = 1; // number of segments
 const SEGMENT_SIZE: number = 2 * 3 * 2; // 2 2D triangles (3 points)
 const SEGMENT_DATA_SIZE = 4 * 2; // 4 2D points
+
+var tmp = new Float32Array(SEGMENT_DATA_SIZE);
 
 function setUpExampleData(map:Map) {
 	console.assert(N === 1, "invalid number of segments");
@@ -22,18 +26,61 @@ export default class Map {
 	public data: Float32Array;
 	public version: number;
 
+	private updateIndex:number = 0;
+
+	private TopData:Float32Array = new Float32Array(2 * 2);
+
 	constructor() {
 		this.data = new Float32Array(SEGMENT_SIZE * N);
 		this.version = 0;
 
-		setUpExampleData(this);
+		//setUpExampleData(this);
 	}
 
 	public numTriangles(): number {
 		return 2 * N;
 	}
 
-	public updateSegment(segmentIndex:number, data:Float32Array):void {
+	public update(data:IServerMapUpdate) {
+		console.assert(data.type === "map" && !!data.data, "Map.update: Illegal Argument!");
+
+		/* server map data:
+			segment:
+			- new top left x,y
+			- new top right x,y
+
+			=> n segments, segment size 4
+		 */
+
+		if(data.data.length % 4 === 0) {
+			let n:number = data.data.length / 4;
+			let k:number, o:number, j:number;
+
+			for(let i=0; i<n; i++) {
+				this.updateIndex = (this.updateIndex+1) % N;
+
+				// copy top data
+				for(k=0; k<this.TopData.length; k++) {
+					tmp[k] = this.TopData[k];
+				}
+
+				o = 4 * i;
+
+				// new data -> tmp, TopData
+				for(j=0; j<this.TopData.length; j++) {
+					tmp[k] = this.TopData[j] = data.data[o + j];
+
+					k++;
+				}
+
+				this.updateSegment(this.updateIndex, tmp);
+			}
+		} else {
+			console.error("Map.update: invalid update length " + data.data.length);
+		}
+	}
+
+	private updateSegment(segmentIndex:number, data:Float32Array):void {
 		console.assert(data.length === SEGMENT_DATA_SIZE, "Invalid segment data.");
 		console.assert(0 <= segmentIndex && segmentIndex < N, "Index out of bounds. (updateSegment)");
 

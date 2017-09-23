@@ -1,6 +1,6 @@
 import {
 	Connection,
-	GameStateUpdateListener
+	GameUpdateListener
 } from "./IConnection";
 
 import {
@@ -85,6 +85,7 @@ export default class Server implements Connection {
 			if(this.isConnected()) {
 				this.wsMsgHandler = (data:IServerMessage) => {
 					if(data.type === "start") {
+						this.wsMsgHandler = null;
 						resolve(<IServerGameStart>data);
 					} else if(data.type === "lobby") {
 						console.log("lobby update");
@@ -122,10 +123,10 @@ export default class Server implements Connection {
 		};
 	}
 
-	public setStateUpdateListener(listener: GameStateUpdateListener) {
+	public setUpdateListener(listener: GameUpdateListener) {
 		if(this.isConnected()) {
 			this.wsMsgHandler = (data:IServerMessage) => {
-				if(data.type === "state") {
+				if(data.type === "state" || data.type === "map") {
 					listener(<IServerGameStateUpdate>data);
 				}
 			};
@@ -140,8 +141,6 @@ export default class Server implements Connection {
 			}
 
 			this.ws.send(JSON.stringify(msg));
-
-			console.log("init msg sent");
 		}
 	}
 }

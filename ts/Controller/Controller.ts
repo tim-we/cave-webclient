@@ -8,11 +8,11 @@ import Server from "./Server";
 import LocalTestServer from "./LocalTestServer";
 import {
 	IServerMessage,
-	IServerGameStateUpdate,
 	IServerGameStart
 } from "./ICommunication";
 
-var connection: Connection = new Server(); //new LocalTestServer();
+var connection: Connection = new Server();
+//var connection: Connection = new LocalTestServer();
 var model: Model = null;
 
 //var tmp: number = 0;
@@ -24,11 +24,10 @@ window.addEventListener("load", () => {
 		 console.log("Connection failed: " + reason);
 	 })
 	 .then((data:IServerGameStart) => {
+		connection.setUpdateListener(serverUpdateHandler);
 		console.log("Starting game!");
 
 		model = new Model(data);
-
-		connection.setStateUpdateListener(stateUpdateHandler);
 
 		View.init(model, mainloop);
 
@@ -55,10 +54,8 @@ function mainloop() {
 	}//*/
 }
 
-function stateUpdateHandler(data:IServerMessage) {
-	if(data.type === "state") {
-		if(model) {
-			model.updateData(<IServerGameStateUpdate>data);
-		}
+function serverUpdateHandler(data:IServerMessage) {
+	if(model) {
+		model.updateData(data);
 	}
 }

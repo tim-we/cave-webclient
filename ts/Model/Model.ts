@@ -2,7 +2,12 @@ import Player from "./Player";
 import OnlinePlayer from "./OnlinePlayer";
 
 import Map from "./Map";
-import { IServerGameStart, IServerGameStateUpdate } from "../Controller/ICommunication";
+import {
+	IServerMessage,
+	IServerMapUpdate,
+	IServerGameStart,
+	IServerGameStateUpdate
+} from "../Controller/ICommunication";
 
 export default class Model {
 
@@ -61,7 +66,15 @@ export default class Model {
 		this.Map = new Map();
 	}
 
-	public updateData(data: IServerGameStateUpdate) {
+	public updateData(data: IServerMessage) {
+		if(data.type === "state") {
+			this.updateState(<IServerGameStateUpdate>data);
+		} else if(data.type === "map") {
+			this.Map.update(<IServerMapUpdate>data);
+		}
+	}
+
+	private updateState(data: IServerGameStateUpdate) {
 		console.assert(data.time >= this.NextTime);
 		
 		this.TimeDelta = Math.max(32, data.time - this.Time); // 2 frames to catch up
