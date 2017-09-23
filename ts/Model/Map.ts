@@ -42,7 +42,7 @@ export default class Map {
 	}
 
 	public update(data:IServerMapUpdate) {
-		console.assert(data.type === "map" && !!data.data, "Map.update: Illegal Argument!");
+		console.assert(data.type === "map", "Map.update: Illegal Argument!");
 
 		/* server map data:
 			segment:
