@@ -286,8 +286,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Model_1 = __webpack_require__(5);
 const View = __webpack_require__(9);
 const UserInput = __webpack_require__(22);
-const Server_1 = __webpack_require__(23);
-var connection = new Server_1.default();
+const LocalTestServer_1 = __webpack_require__(23);
+var connection = new LocalTestServer_1.default();
 var model = null;
 window.addEventListener("load", () => {
     connection.connect("Ulysses")
@@ -1109,121 +1109,81 @@ document.addEventListener("keyup", function (e) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-class Server {
-    constructor(secure = false, host = "localhost", port = 8080) {
-        this.ws = null;
-        this.url = (secure ? "wss" : "ws") + "://" + host + ":" + port;
+const UPDATE_RATE = 100;
+class LocalTestServer {
+    constructor() {
+        this.connected = false;
+        this.gameStarted = false;
+        this.Rotation = 0.0;
+        this.callback = null;
+        this.RoundStart = Date.now() + 3;
     }
-    connect(name) {
+    connect() {
         return new Promise((resolve, reject) => {
-            if (this.isConnected()) {
-                reject(new Error("Already connected."));
+            if (this.connected) {
+                reject();
             }
             else {
-                console.log("Connecting...");
-                this.ws = new WebSocket(this.url);
-                this.ws.onopen = () => {
-                    console.log("Connected.");
-                    this.sendInit(name);
-                    resolve();
-                };
-                this.ws.onclose = () => {
-                    this.ws = null;
-                    this.wsMsgHandler = null;
-                    console.log("Connection closed.");
-                };
-                this.ws.onmessage = (e) => {
-                    let data;
-                    try {
-                        data = JSON.parse(e.data.toString());
+                this.connected = true;
+                this.gameStarted = false;
+                this.updateInterval = setInterval(() => {
+                    let time = Date.now() - this.RoundStart;
+                    this.Rotation += 0.01;
+                    if (this.callback) {
+                        this.callback({
+                            type: "state",
+                            time: time,
+                            pdata: [{
+                                    pos: { x: 0, y: 0 },
+                                    alv: true
+                                }],
+                            rotation: this.Rotation,
+                            speed: 0.42
+                        });
                     }
-                    catch (err) {
-                        console.error("Unable to parse server message!");
-                        console.log(err);
-                        console.log(e);
-                        return;
-                    }
-                    if (data.type === "msg") {
-                        console.log("Server Message: " + data.msg);
-                    }
-                    else if (data.type === "reject") {
-                        console.log("Rejected by server! Reason: " + data.reason);
-                    }
-                    else {
-                        if (this.wsMsgHandler) {
-                            this.wsMsgHandler(data);
-                        }
-                        else {
-                            console.warn("Unhandled message!");
-                            console.log(e.data);
-                        }
-                    }
-                };
+                }, UPDATE_RATE);
+                resolve();
             }
         });
     }
     waitForStart() {
-        console.log("Waiting for round start...");
         return new Promise((resolve, reject) => {
-            if (this.isConnected()) {
-                this.wsMsgHandler = (data) => {
-                    if (data.type === "start") {
-                        this.wsMsgHandler = null;
-                        resolve(data);
-                    }
-                    else if (data.type === "lobby") {
-                        console.log("lobby update");
-                    }
-                    else {
-                        reject(new Error("Unexpected Server Message (type = " + data.type + ")"));
-                    }
-                };
+            if (!this.connected || this.gameStarted) {
+                reject();
             }
             else {
-                console.log("ready state: " + this.ws.readyState);
-                reject(new Error("WFRS: Not connected."));
+                this.gameStarted = true;
+                resolve({
+                    type: "start",
+                    index: 0,
+                    time: -3,
+                    playerInitData: [
+                        { name: "Bob", color: 0 }
+                    ]
+                });
             }
         });
     }
     disconnect() {
-        if (this.ws) {
-            if (this.ws.readyState !== this.ws.CLOSING) {
-                this.ws.close();
-            }
+        if (this.connected) {
+            return;
         }
+        this.connected = false;
+        clearInterval(this.updateInterval);
+        this.callback = null;
     }
     isConnected() {
-        return this.ws && this.ws.readyState === this.ws.OPEN;
+        return this.connected;
     }
     updateState(model) {
-        let msg = {
-            type: "state",
-            time: 0,
-            pos: { x: 0, y: 0 },
-            vel: { x: 0, y: 0 },
-            pow: model.Player.Force
-        };
     }
     setUpdateListener(listener) {
         if (this.isConnected()) {
-            this.wsMsgHandler = (data) => {
-                if (data.type === "state" || data.type === "map") {
-                    listener(data);
-                }
-            };
-        }
-    }
-    sendInit(name) {
-        if (this.isConnected()) {
-            let msg = {
-                type: "init",
-                name: name
-            };
-            this.ws.send(JSON.stringify(msg));
+            this.callback = listener;
         }
     }
 }
-exports.default = Server;
+exports.default = LocalTestServer;
 
 
 /***/ })

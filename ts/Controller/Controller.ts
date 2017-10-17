@@ -11,8 +11,8 @@ import {
 	IServerGameStart
 } from "./ICommunication";
 
-var connection: Connection = new Server();
-//var connection: Connection = new LocalTestServer();
+//var connection: Connection = new Server();
+var connection: Connection = new LocalTestServer();
 var model: Model = null;
 
 //var tmp: number = 0;
