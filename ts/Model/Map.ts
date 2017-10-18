@@ -6,7 +6,7 @@ const SEGMENT_DATA_SIZE = 4 * 2; // 4 2D points
 
 var tmp = new Float32Array(SEGMENT_DATA_SIZE);
 
-function setUpExampleData(map:Map) {
+/*function setUpExampleData(map:Map) {
 	console.assert(N === 1, "invalid number of segments");
 
 	let i = 0;
@@ -20,7 +20,7 @@ function setUpExampleData(map:Map) {
 	for (i = 0; i < 4; i++) {
 		map.updatePoint(0, i, data);
 	}
-}
+}*/
 
 export default class Map {
 	public data: Float32Array;
@@ -30,9 +30,15 @@ export default class Map {
 
 	private TopData:Float32Array = new Float32Array(2 * 2);
 
-	constructor() {
+	constructor(initData:number[]) {
 		this.data = new Float32Array(SEGMENT_SIZE * N);
 		this.version = 0;
+
+		for (let i = 0; i < this.TopData.length; i++) {
+			this.TopData[i] = initData[i];
+		}
+
+		console.log(initData);
 
 		//setUpExampleData(this);
 	}
@@ -43,6 +49,7 @@ export default class Map {
 
 	public update(data:IServerMapUpdate) {
 		console.assert(data.type === "map", "Map.update: Illegal Argument!");
+		console.log("Map update, " + (data.data.length / 4) + " segments");
 
 		/* server map data:
 			segment:
@@ -56,24 +63,27 @@ export default class Map {
 			let n:number = data.data.length / 4;
 			let k:number, o:number, j:number;
 
-			for(let i=0; i<n; i++) {
-				this.updateIndex = (this.updateIndex+1) % N;
+			for (let i = 0; i < n; i++) {
+				// new segment = top of previous segment & 2 points from update
 
-				// copy top data
+				// copy top data from previous segment
 				for(k=0; k<this.TopData.length; k++) {
 					tmp[k] = this.TopData[k];
 				}
 
+				// data offset in update
 				o = 4 * i;
 
-				// new data -> tmp, TopData
+				// take 2 2D points from update data, update TopData
 				for(j=0; j<this.TopData.length; j++) {
-					tmp[k] = this.TopData[j] = data.data[o + j];
-
-					k++;
+					tmp[k+j] = this.TopData[j] = data.data[o + j];
 				}
 
+				// update the segment
 				this.updateSegment(this.updateIndex, tmp);
+
+				// index of the next segment that gets updated
+				this.updateIndex = (this.updateIndex+1) % N;
 			}
 		} else {
 			console.error("Map.update: invalid update length " + data.data.length);
@@ -96,8 +106,7 @@ export default class Map {
 		this.version++;
 	}
 
-	//TODO: make private
-	public updatePoint(segment: number, pointIndex: number, data:Float32Array) {
+	private updatePoint(segment: number, pointIndex: number, data:Float32Array) {
 		let offset: number;
 
 		if (pointIndex % 2 === 0) { // points 0,2 (shared)

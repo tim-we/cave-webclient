@@ -337,7 +337,7 @@ class Model {
         this.RotationDelta = 0.0;
         let n = data.playerInitData.length;
         console.assert(n > 0);
-        console.assert(data.time < 0);
+        console.assert(data.time < 0, "unexpected: data.time = " + data.time);
         this.Time = data.time;
         this.NextTime = data.time;
         this.TimeDelta = 0.0;
@@ -488,12 +488,14 @@ class Map {
         this.TopData = new Float32Array(2 * 2);
         this.data = new Float32Array(SEGMENT_SIZE * N);
         this.version = 0;
+        setUpExampleData(this);
     }
     numTriangles() {
         return 2 * N;
     }
     update(data) {
         console.assert(data.type === "map", "Map.update: Illegal Argument!");
+        console.log("Map update, " + (data.data.length / 2) + " points");
         if (data.data.length % 4 === 0) {
             let n = data.data.length / 4;
             let k, o, j;
@@ -504,8 +506,7 @@ class Map {
                 }
                 o = 4 * i;
                 for (j = 0; j < this.TopData.length; j++) {
-                    tmp[k] = this.TopData[j] = data.data[o + j];
-                    k++;
+                    tmp[k + j] = this.TopData[j] = data.data[o + j];
                 }
                 this.updateSegment(this.updateIndex, tmp);
             }

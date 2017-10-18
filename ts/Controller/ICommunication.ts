@@ -43,6 +43,7 @@ export interface IServerGameStart extends IServerMessage {
 	playerInitData: IPlayerInitData[];
 	index: number;
 	time: number;
+	mapInit: number[]; // length === 4 (2 2D points)
 }
 
 export interface IServerGameStateUpdate extends IServerMessage {

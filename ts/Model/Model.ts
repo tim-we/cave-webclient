@@ -32,7 +32,7 @@ export default class Model {
 
 		// validate data
 		console.assert(n > 0);
-		console.assert(data.time < 0); // 0: start
+		console.assert(data.time < 0, "unexpected: data.time = " + data.time); // 0: start
 
 		// set up timestamps
 		this.Time = data.time;
@@ -63,13 +63,13 @@ export default class Model {
 		Object.freeze(this.OnlinePlayers);
 
 		// create map
-		this.Map = new Map();
+		this.Map = new Map(data.mapInit);
 	}
 
 	public updateData(data: IServerMessage) {
 		if(data.type === "state") {
 			this.updateState(<IServerGameStateUpdate>data);
-		} else if(data.type === "map") {
+		} else if (data.type === "map") {
 			this.Map.update(<IServerMapUpdate>data);
 		}
 	}

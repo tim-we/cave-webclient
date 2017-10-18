@@ -286,8 +286,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Model_1 = __webpack_require__(5);
 const View = __webpack_require__(9);
 const UserInput = __webpack_require__(22);
-const LocalTestServer_1 = __webpack_require__(23);
-var connection = new LocalTestServer_1.default();
+const Server_1 = __webpack_require__(23);
+var connection = new Server_1.default();
 var model = null;
 window.addEventListener("load", () => {
     connection.connect("Ulysses")
@@ -337,7 +337,7 @@ class Model {
         this.RotationDelta = 0.0;
         let n = data.playerInitData.length;
         console.assert(n > 0);
-        console.assert(data.time < 0);
+        console.assert(data.time < 0, "unexpected: data.time = " + data.time);
         this.Time = data.time;
         this.NextTime = data.time;
         this.TimeDelta = 0.0;
@@ -357,7 +357,7 @@ class Model {
             }
         }
         Object.freeze(this.OnlinePlayers);
-        this.Map = new Map_1.default();
+        this.Map = new Map_1.default(data.mapInit);
     }
     updateData(data) {
         if (data.type === "state") {
@@ -466,48 +466,36 @@ const N = 1;
 const SEGMENT_SIZE = 2 * 3 * 2;
 const SEGMENT_DATA_SIZE = 4 * 2;
 var tmp = new Float32Array(SEGMENT_DATA_SIZE);
-function setUpExampleData(map) {
-    console.assert(N === 1, "invalid number of segments");
-    let i = 0;
-    let data = new Float32Array(4 * 2);
-    data[i++] = -0.8;
-    data[i++] = -0.5;
-    data[i++] = 0.2;
-    data[i++] = -0.5;
-    data[i++] = 0.5;
-    data[i++] = 0.5;
-    data[i++] = -0.5;
-    data[i++] = 0.5;
-    for (i = 0; i < 4; i++) {
-        map.updatePoint(0, i, data);
-    }
-}
 class Map {
-    constructor() {
+    constructor(initData) {
         this.updateIndex = 0;
         this.TopData = new Float32Array(2 * 2);
         this.data = new Float32Array(SEGMENT_SIZE * N);
         this.version = 0;
+        for (let i = 0; i < this.TopData.length; i++) {
+            this.TopData[i] = initData[i];
+        }
+        console.log(initData);
     }
     numTriangles() {
         return 2 * N;
     }
     update(data) {
         console.assert(data.type === "map", "Map.update: Illegal Argument!");
+        console.log("Map update, " + (data.data.length / 4) + " segments");
         if (data.data.length % 4 === 0) {
             let n = data.data.length / 4;
             let k, o, j;
             for (let i = 0; i < n; i++) {
-                this.updateIndex = (this.updateIndex + 1) % N;
                 for (k = 0; k < this.TopData.length; k++) {
                     tmp[k] = this.TopData[k];
                 }
                 o = 4 * i;
                 for (j = 0; j < this.TopData.length; j++) {
-                    tmp[k] = this.TopData[j] = data.data[o + j];
-                    k++;
+                    tmp[k + j] = this.TopData[j] = data.data[o + j];
                 }
                 this.updateSegment(this.updateIndex, tmp);
+                this.updateIndex = (this.updateIndex + 1) % N;
             }
         }
         else {
@@ -1109,81 +1097,121 @@ document.addEventListener("keyup", function (e) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const UPDATE_RATE = 100;
-class LocalTestServer {
-    constructor() {
-        this.connected = false;
-        this.gameStarted = false;
-        this.Rotation = 0.0;
-        this.callback = null;
-        this.RoundStart = Date.now() + 3;
+class Server {
+    constructor(secure = false, host = "localhost", port = 8080) {
+        this.ws = null;
+        this.url = (secure ? "wss" : "ws") + "://" + host + ":" + port;
     }
-    connect() {
+    connect(name) {
         return new Promise((resolve, reject) => {
-            if (this.connected) {
-                reject();
+            if (this.isConnected()) {
+                reject(new Error("Already connected."));
             }
             else {
-                this.connected = true;
-                this.gameStarted = false;
-                this.updateInterval = setInterval(() => {
-                    let time = Date.now() - this.RoundStart;
-                    this.Rotation += 0.01;
-                    if (this.callback) {
-                        this.callback({
-                            type: "state",
-                            time: time,
-                            pdata: [{
-                                    pos: { x: 0, y: 0 },
-                                    alv: true
-                                }],
-                            rotation: this.Rotation,
-                            speed: 0.42
-                        });
+                console.log("Connecting...");
+                this.ws = new WebSocket(this.url);
+                this.ws.onopen = () => {
+                    console.log("Connected.");
+                    this.sendInit(name);
+                    resolve();
+                };
+                this.ws.onclose = () => {
+                    this.ws = null;
+                    this.wsMsgHandler = null;
+                    console.log("Connection closed.");
+                };
+                this.ws.onmessage = (e) => {
+                    let data;
+                    try {
+                        data = JSON.parse(e.data.toString());
                     }
-                }, UPDATE_RATE);
-                resolve();
+                    catch (err) {
+                        console.error("Unable to parse server message!");
+                        console.log(err);
+                        console.log(e);
+                        return;
+                    }
+                    if (data.type === "msg") {
+                        console.log("Server Message: " + data.msg);
+                    }
+                    else if (data.type === "reject") {
+                        console.log("Rejected by server! Reason: " + data.reason);
+                    }
+                    else {
+                        if (this.wsMsgHandler) {
+                            this.wsMsgHandler(data);
+                        }
+                        else {
+                            console.warn("Unhandled message!");
+                            console.log(e.data);
+                        }
+                    }
+                };
             }
         });
     }
     waitForStart() {
+        console.log("Waiting for round start...");
         return new Promise((resolve, reject) => {
-            if (!this.connected || this.gameStarted) {
-                reject();
+            if (this.isConnected()) {
+                this.wsMsgHandler = (data) => {
+                    if (data.type === "start") {
+                        this.wsMsgHandler = null;
+                        resolve(data);
+                    }
+                    else if (data.type === "lobby") {
+                        console.log("lobby update");
+                    }
+                    else {
+                        reject(new Error("Unexpected Server Message (type = " + data.type + ")"));
+                    }
+                };
             }
             else {
-                this.gameStarted = true;
-                resolve({
-                    type: "start",
-                    index: 0,
-                    time: -3,
-                    playerInitData: [
-                        { name: "Bob", color: 0 }
-                    ]
-                });
+                console.log("ready state: " + this.ws.readyState);
+                reject(new Error("WFRS: Not connected."));
             }
         });
     }
     disconnect() {
-        if (this.connected) {
-            return;
+        if (this.ws) {
+            if (this.ws.readyState !== this.ws.CLOSING) {
+                this.ws.close();
+            }
         }
-        this.connected = false;
-        clearInterval(this.updateInterval);
-        this.callback = null;
     }
     isConnected() {
-        return this.connected;
+        return this.ws && this.ws.readyState === this.ws.OPEN;
     }
     updateState(model) {
+        let msg = {
+            type: "state",
+            time: 0,
+            pos: { x: 0, y: 0 },
+            vel: { x: 0, y: 0 },
+            pow: model.Player.Force
+        };
     }
     setUpdateListener(listener) {
         if (this.isConnected()) {
-            this.callback = listener;
+            this.wsMsgHandler = (data) => {
+                if (data.type === "state" || data.type === "map") {
+                    listener(data);
+                }
+            };
+        }
+    }
+    sendInit(name) {
+        if (this.isConnected()) {
+            let msg = {
+                type: "init",
+                name: name
+            };
+            this.ws.send(JSON.stringify(msg));
         }
     }
 }
-exports.default = LocalTestServer;
+exports.default = Server;
 
 
 /***/ })

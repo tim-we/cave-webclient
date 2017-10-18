@@ -71,7 +71,8 @@ export default class LocalTestServer implements Connection {
 					time: -3,
 					playerInitData: [
 						{ name: "Bob", color: 0 }
-					]
+					],
+					mapInit: [ -0.9, 0.75, 0.9, 0.75 ]
 				});
 			}
 		});
