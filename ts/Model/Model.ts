@@ -24,7 +24,7 @@ export default class Model {
 
 	private Speed:number = 0.42; // main axis velocity
 
-	public Rotation: number = 0.1 * Math.PI;
+	public Rotation: number = 0 * Math.PI;
 	private RotationDelta: number = 0.0;
 
 	constructor(data:IServerGameStart) {

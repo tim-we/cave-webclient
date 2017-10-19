@@ -333,7 +333,7 @@ const Map_1 = __webpack_require__(8);
 class Model {
     constructor(data) {
         this.Speed = 0.42;
-        this.Rotation = 0.1 * Math.PI;
+        this.Rotation = 0 * Math.PI;
         this.RotationDelta = 0.0;
         let n = data.playerInitData.length;
         console.assert(n > 0);
@@ -462,7 +462,7 @@ exports.default = OnlinePlayer;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const N = 42;
+const N = 50;
 const SEGMENT_SIZE = 2 * 3 * 2;
 const SEGMENT_DATA_SIZE = 4 * 2;
 var tmp = new Float32Array(SEGMENT_DATA_SIZE);
