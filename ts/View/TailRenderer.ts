@@ -57,6 +57,11 @@ export function draw(transform:Matrix, player:AbstractPlayer): void {
 	gl.vertexAttribPointer(vertexAttribPos, 2, gl.FLOAT, false, 3 * 4, 0);
 	gl.vertexAttribPointer(vertexAttribPow, 1, gl.FLOAT, false, 3 * 4, 2 * 4);
 
+	// do not change (keep) stencil values
+	gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+	// do not draw on background (0) ("inside the map")
+	gl.stencilFunc(gl.LESS, 0, 0xFF);
+
 	transform.uniform(gl, uniformPM);
 	gl.uniform1f(uniformZ, player.Z);
 	player.Color.setUniform(gl, uniformColor);

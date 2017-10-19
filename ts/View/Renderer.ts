@@ -5,6 +5,11 @@ import * as MapRenderer from "./MapRenderer";
 import * as PlayerRenderer from "./PlayerRenderer";
 
 //declare var WebGLDebugUtils;
+const glOptions = {
+	alpha: true,
+	stencil: true,
+	//antialias: false
+};
 
 var gl: WebGLRenderingContext = null;
 var model: Model = null;
@@ -15,10 +20,11 @@ var transformMatrix: Matrix = new Matrix();
 
 export function init(canvas: HTMLCanvasElement):void {
 	try {
-		gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+		gl = <WebGLRenderingContext>(canvas.getContext("webgl", glOptions) || canvas.getContext("experimental-webgl", glOptions));
 		//gl = WebGLDebugUtils.makeDebugContext(canvas.getContext("webgl"));
 	} catch (e) {
 		console.warn("Error initializing webgl.");
+		console.error(e);
 		return;
 	}
 
@@ -27,10 +33,17 @@ export function init(canvas: HTMLCanvasElement):void {
 		return;
 	}
 
-	// map z to w
+	let contextAttributes = gl.getContextAttributes();
+
+	// set up stencil
+	console.assert(contextAttributes.stencil, "WebGL: stencil not available!");
+	gl.enable(gl.STENCIL_TEST);
+	// start with stencil value 0
+	gl.clearStencil(0);
+
+	// set up projection matrix (map z to w)
 	projMatrix.setEntry(3, 2, 1.0);
 	projMatrix.setEntry(3, 3, 0.0);
-
 	resize(window.innerWidth, window.innerHeight);
 
 	// init map renderer
@@ -48,7 +61,8 @@ export function draw() {
 	
 	updateTransformation();
 
-	gl.clear(gl.COLOR_BUFFER_BIT);
+	// MapRenderer will clear the color buffer
+	gl.clear(gl.STENCIL_BUFFER_BIT);
 
 	MapRenderer.draw(transformMatrix);
 	

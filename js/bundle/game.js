@@ -711,6 +711,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Matrix_1 = __webpack_require__(12);
 const MapRenderer = __webpack_require__(13);
 const PlayerRenderer = __webpack_require__(16);
+const glOptions = {
+    alpha: true,
+    stencil: true,
+};
 var gl = null;
 var model = null;
 var projMatrix = new Matrix_1.default();
@@ -718,16 +722,21 @@ var viewMatrix = new Matrix_1.default();
 var transformMatrix = new Matrix_1.default();
 function init(canvas) {
     try {
-        gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        gl = (canvas.getContext("webgl", glOptions) || canvas.getContext("experimental-webgl", glOptions));
     }
     catch (e) {
         console.warn("Error initializing webgl.");
+        console.error(e);
         return;
     }
     if (!gl) {
         alert("Unable to initialize WebGL. Your browser may not support it.");
         return;
     }
+    let contextAttributes = gl.getContextAttributes();
+    console.assert(contextAttributes.stencil, "WebGL: stencil not available!");
+    gl.enable(gl.STENCIL_TEST);
+    gl.clearStencil(0);
     projMatrix.setEntry(3, 2, 1.0);
     projMatrix.setEntry(3, 3, 0.0);
     resize(window.innerWidth, window.innerHeight);
@@ -745,7 +754,7 @@ function draw() {
         return;
     }
     updateTransformation();
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.STENCIL_BUFFER_BIT);
     MapRenderer.draw(transformMatrix);
     model.OnlinePlayers.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
     PlayerRenderer.draw(transformMatrix, model.Player);
@@ -914,15 +923,18 @@ function draw(proj) {
     gl.enableVertexAttribArray(vertexPosAttrib);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.vertexAttribPointer(vertexPosAttrib, 2, gl.FLOAT, false, 0, 0);
-    for (let i = 1; i <= NUM_LAYERS; i++) {
-        drawLayer(proj, 0.04 + i * 0.08);
+    gl.stencilOp(gl.KEEP, gl.INCR, gl.INCR);
+    for (let i = 0; i < NUM_LAYERS; i++) {
+        drawLayer(i, proj);
     }
     if (bufferVersion < data.version) {
         setTimeout(updateBuffer, 0);
     }
 }
 exports.draw = draw;
-function drawLayer(proj, z) {
+function drawLayer(index, proj) {
+    let z = 0.04 + (index + 1) * 0.08;
+    gl.stencilFunc(gl.LEQUAL, index, 0xFF);
     gl.uniform1f(uniformZ, z);
     proj.uniform(gl, uniformPM);
     gl.drawArrays(gl.TRIANGLES, 0, 3 * data.numTriangles());
@@ -1004,6 +1016,8 @@ function draw(transform, player) {
     gl.vertexAttribPointer(vertexAttribPos, 2, gl.FLOAT, false, 4 * 4, 0);
     gl.vertexAttribPointer(vertexAttribCSQ, 2, gl.FLOAT, false, 4 * 4, 2 * 4);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+    gl.stencilFunc(gl.LESS, 0, 0xFF);
     transform.uniform(gl, uniformPM);
     gl.uniform1f(uniformZ, player.Z);
     player.Color.setUniform(gl, uniformColor);
@@ -1053,6 +1067,8 @@ function draw(transform, player) {
     gl.enableVertexAttribArray(vertexAttribPow);
     gl.vertexAttribPointer(vertexAttribPos, 2, gl.FLOAT, false, 3 * 4, 0);
     gl.vertexAttribPointer(vertexAttribPow, 1, gl.FLOAT, false, 3 * 4, 2 * 4);
+    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+    gl.stencilFunc(gl.LESS, 0, 0xFF);
     transform.uniform(gl, uniformPM);
     gl.uniform1f(uniformZ, player.Z);
     player.Color.setUniform(gl, uniformColor);

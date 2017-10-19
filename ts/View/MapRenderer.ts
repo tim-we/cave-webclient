@@ -68,8 +68,11 @@ export function draw(proj:Matrix): void {
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.vertexAttribPointer(vertexPosAttrib, 2, gl.FLOAT, false, 0, 0);
 	
-	for(let i=1; i<=NUM_LAYERS; i++) {
-		drawLayer(proj, 0.04 + i*0.08);
+	// increment stencil value if stencil test passes
+	gl.stencilOp(gl.KEEP, gl.INCR, gl.INCR);
+
+	for(let i=0; i<NUM_LAYERS; i++) {
+		drawLayer(i, proj);
 	}
 
 	if (bufferVersion < data.version) {
@@ -78,7 +81,11 @@ export function draw(proj:Matrix): void {
 	}
 }
 
-function drawLayer(proj:Matrix, z:number):void {
+function drawLayer(index: number, proj: Matrix): void {
+	let z: number = 0.04 + (index+1) * 0.08;
+	// only draw (&increment stencil) where stencil value is `index`
+	gl.stencilFunc(gl.LEQUAL, index, 0xFF);
+
 	// set z position
 	gl.uniform1f(uniformZ, z);
 

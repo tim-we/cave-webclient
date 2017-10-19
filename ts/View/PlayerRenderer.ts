@@ -83,6 +83,11 @@ export function draw(transform: Matrix, player: AbstractPlayer) {
 	//gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // normal blending
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // additive blending
 
+	// do not change (keep) stencil values
+	gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+	// do not draw on background (0) ("inside the map")
+	gl.stencilFunc(gl.LESS, 0, 0xFF);
+
 	transform.uniform(gl, uniformPM);
 	gl.uniform1f(uniformZ, player.Z);
 	player.Color.setUniform(gl, uniformColor);
