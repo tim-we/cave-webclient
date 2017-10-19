@@ -9,7 +9,7 @@ import {
 export const TAILLENGTH = 80;
 const TAILNODESIZE = 2 * (2 + 1);
 const TAILWIDTH = 0.005;
-const STARTSPEED: Vector = new Vector(1.0, 0);
+const STARTSPEED: Vector = new Vector(0.0, 0.75);
 
 var tmp: Vector = new Vector();
 
@@ -53,10 +53,16 @@ export default abstract class AbstractPlayer {
 	}
 
 	protected updateVelocity(x:number, y:number):void {
-		this.Velocity.set(x,y);
+		this.Velocity.set(
+			clamp(x, -1, 1),
+			y);
 
 		this.Velocity.ortho(this.VelOrthoDir);
 		this.VelOrthoDir.scale(1.0 / this.VelOrthoDir.length());
+	}
+
+	protected updateXVelocity(x: number): void {
+		this.updateVelocity(this.Velocity.getX() + x, this.Velocity.getY());
 	}
 
 	public move(t: number) {
@@ -108,4 +114,8 @@ function shiftTailData(data: Float32Array | Float64Array): void {
 		data[j + 3] = data[i + 3];
 		data[j + 4] = data[i + 4];
 	}
+}
+
+function clamp(value:number, min:number, max:number): number {
+	return Math.max(min, Math.min(value, max));
 }

@@ -1,6 +1,8 @@
 import Player from "./Player";
 import OnlinePlayer from "./OnlinePlayer";
 
+import Camera from "./Camera";
+
 import Map from "./Map";
 import {
 	IServerMessage,
@@ -19,6 +21,8 @@ export default class Model {
 	public OnlinePlayers: OnlinePlayer[];
 
 	public Player: Player;
+
+	public Camera: Camera = new Camera();
 
 	public Map: Map;
 
@@ -92,23 +96,29 @@ export default class Model {
 	}
 
 	public update(): void {
-		if (this.TimeDelta <= 0.0) { return; }
+		//if (this.TimeDelta <= 0.0) { return; }
+		console.log("model update");
 
 		// d = time since this method was called previously
 		let d: number = performance.now() - this.LastUpdate; //ms
 		this.LastUpdate = performance.now();
 
+		// time in seconds
 		let t:number = d / 1000;
 
 		// update current model time
 		this.Time = Math.min(this.Time + t, this.NextTime);
 
-		// move players
+		// move player & update velocity
 		this.Player.move(t);
 		this.Player.update(t);
 
+		// update other players
 		this.OnlinePlayers.forEach(p => {
 			p.move(t);
 		});
+
+		// update camera
+		this.Camera.update(this, t);
 	}
 }

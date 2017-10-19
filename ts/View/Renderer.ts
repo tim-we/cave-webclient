@@ -10,7 +10,7 @@ var gl: WebGLRenderingContext = null;
 var model: Model = null;
 
 var projMatrix: Matrix = new Matrix();
-var rotationMatrix: Matrix = new Matrix();
+var viewMatrix: Matrix = new Matrix();
 var transformMatrix: Matrix = new Matrix();
 
 export function init(canvas: HTMLCanvasElement):void {
@@ -26,6 +26,10 @@ export function init(canvas: HTMLCanvasElement):void {
 		alert("Unable to initialize WebGL. Your browser may not support it.");
 		return;
 	}
+
+	// map z to w
+	projMatrix.setEntry(3, 2, 1.0);
+	projMatrix.setEntry(3, 3, 0.0);
 
 	resize(window.innerWidth, window.innerHeight);
 
@@ -68,6 +72,6 @@ export function resize(width:number, height:number): void {
 
 function updateTransformation(): void {
 	// assume model != null
-	rotationMatrix.makeZRotation(model.Rotation);
-	Matrix.multiply(projMatrix, rotationMatrix, transformMatrix);
+	model.Camera.setViewMatrix(viewMatrix, model);
+	Matrix.multiply(projMatrix, viewMatrix, transformMatrix);
 }

@@ -70,76 +70,6 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Vector_1 = __webpack_require__(1);
-const Color_1 = __webpack_require__(3);
-exports.TAILLENGTH = 80;
-const TAILNODESIZE = 2 * (2 + 1);
-const TAILWIDTH = 0.005;
-const STARTSPEED = new Vector_1.default(1.0, 0);
-var tmp = new Vector_1.default();
-class AbstractPlayer {
-    constructor(data, zPos) {
-        this.Position = new Vector_1.default(0.0, 0.0);
-        this.Velocity = STARTSPEED.clone();
-        this.VelOrthoDir = new Vector_1.default(0.0, 0.0);
-        this.Z = zPos;
-        this.Alive = true;
-        this.Color = Color_1.default.create(data.color);
-        this.Tail = new Float32Array(exports.TAILLENGTH * TAILNODESIZE);
-        let h = 1.0 / (exports.TAILLENGTH - 1);
-        for (let i = 0; i < exports.TAILLENGTH; i++) {
-            this.Tail[i * TAILNODESIZE + 2] = i * h;
-            this.Tail[i * TAILNODESIZE + 5] = i * h;
-        }
-    }
-    updateVelocity(x, y) {
-        this.Velocity.set(x, y);
-        this.Velocity.ortho(this.VelOrthoDir);
-        this.VelOrthoDir.scale(1.0 / this.VelOrthoDir.length());
-    }
-    move(t) {
-        Vector_1.default.axpy(t, this.Velocity, this.Position);
-        this.updateTail();
-    }
-    updateTail() {
-        let n = this.Tail.length;
-        shiftTailData(this.Tail);
-        Vector_1.default.axpy2(TAILWIDTH, this.VelOrthoDir, this.Position, tmp);
-        this.Tail[n - 6] = tmp.getX();
-        this.Tail[n - 5] = tmp.getY();
-        Vector_1.default.axpy2(-TAILWIDTH, this.VelOrthoDir, this.Position, tmp);
-        this.Tail[n - 3] = tmp.getX();
-        this.Tail[n - 2] = tmp.getY();
-    }
-    die() {
-        this.Alive = false;
-    }
-    static getTailVertexCount() {
-        return exports.TAILLENGTH * 2;
-    }
-}
-exports.default = AbstractPlayer;
-function shiftTailData(data) {
-    let i;
-    let j;
-    for (let k = 1; k < exports.TAILLENGTH; k++) {
-        i = k * TAILNODESIZE;
-        j = i - TAILNODESIZE;
-        data[j + 0] = data[i + 0];
-        data[j + 1] = data[i + 1];
-        data[j + 3] = data[i + 3];
-        data[j + 4] = data[i + 4];
-    }
-}
-
-
-/***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
 class Vector {
     constructor(x = 0.0, y = 0.0) {
         this.data = new Float64Array(2);
@@ -198,6 +128,82 @@ class Vector {
     }
 }
 exports.default = Vector;
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Vector_1 = __webpack_require__(0);
+const Color_1 = __webpack_require__(3);
+exports.TAILLENGTH = 80;
+const TAILNODESIZE = 2 * (2 + 1);
+const TAILWIDTH = 0.005;
+const STARTSPEED = new Vector_1.default(0.0, 0.75);
+var tmp = new Vector_1.default();
+class AbstractPlayer {
+    constructor(data, zPos) {
+        this.Position = new Vector_1.default(0.0, 0.0);
+        this.Velocity = STARTSPEED.clone();
+        this.VelOrthoDir = new Vector_1.default(0.0, 0.0);
+        this.Z = zPos;
+        this.Alive = true;
+        this.Color = Color_1.default.create(data.color);
+        this.Tail = new Float32Array(exports.TAILLENGTH * TAILNODESIZE);
+        let h = 1.0 / (exports.TAILLENGTH - 1);
+        for (let i = 0; i < exports.TAILLENGTH; i++) {
+            this.Tail[i * TAILNODESIZE + 2] = i * h;
+            this.Tail[i * TAILNODESIZE + 5] = i * h;
+        }
+    }
+    updateVelocity(x, y) {
+        this.Velocity.set(clamp(x, -1, 1), y);
+        this.Velocity.ortho(this.VelOrthoDir);
+        this.VelOrthoDir.scale(1.0 / this.VelOrthoDir.length());
+    }
+    updateXVelocity(x) {
+        this.updateVelocity(this.Velocity.getX() + x, this.Velocity.getY());
+    }
+    move(t) {
+        Vector_1.default.axpy(t, this.Velocity, this.Position);
+        this.updateTail();
+    }
+    updateTail() {
+        let n = this.Tail.length;
+        shiftTailData(this.Tail);
+        Vector_1.default.axpy2(TAILWIDTH, this.VelOrthoDir, this.Position, tmp);
+        this.Tail[n - 6] = tmp.getX();
+        this.Tail[n - 5] = tmp.getY();
+        Vector_1.default.axpy2(-TAILWIDTH, this.VelOrthoDir, this.Position, tmp);
+        this.Tail[n - 3] = tmp.getX();
+        this.Tail[n - 2] = tmp.getY();
+    }
+    die() {
+        this.Alive = false;
+    }
+    static getTailVertexCount() {
+        return exports.TAILLENGTH * 2;
+    }
+}
+exports.default = AbstractPlayer;
+function shiftTailData(data) {
+    let i;
+    let j;
+    for (let k = 1; k < exports.TAILLENGTH; k++) {
+        i = k * TAILNODESIZE;
+        j = i - TAILNODESIZE;
+        data[j + 0] = data[i + 0];
+        data[j + 1] = data[i + 1];
+        data[j + 3] = data[i + 3];
+        data[j + 4] = data[i + 4];
+    }
+}
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(value, max));
+}
 
 
 /***/ }),
@@ -284,9 +290,9 @@ exports.default = Color;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Model_1 = __webpack_require__(5);
-const View = __webpack_require__(9);
-const UserInput = __webpack_require__(22);
-const Server_1 = __webpack_require__(23);
+const View = __webpack_require__(10);
+const UserInput = __webpack_require__(23);
+const Server_1 = __webpack_require__(24);
 var connection = new Server_1.default();
 var model = null;
 window.addEventListener("load", () => {
@@ -307,10 +313,10 @@ window.addEventListener("load", () => {
 });
 function mainloop() {
     if (model) {
-        model.update();
         if (model.Player.Alive) {
             model.Player.Force = UserInput.isPressed();
         }
+        model.update();
     }
 }
 function serverUpdateHandler(data) {
@@ -329,9 +335,11 @@ function serverUpdateHandler(data) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const Player_1 = __webpack_require__(6);
 const OnlinePlayer_1 = __webpack_require__(7);
-const Map_1 = __webpack_require__(8);
+const Camera_1 = __webpack_require__(8);
+const Map_1 = __webpack_require__(9);
 class Model {
     constructor(data) {
+        this.Camera = new Camera_1.default();
         this.Speed = 0.42;
         this.Rotation = 0 * Math.PI;
         this.RotationDelta = 0.0;
@@ -379,9 +387,7 @@ class Model {
         }
     }
     update() {
-        if (this.TimeDelta <= 0.0) {
-            return;
-        }
+        console.log("model update");
         let d = performance.now() - this.LastUpdate;
         this.LastUpdate = performance.now();
         let t = d / 1000;
@@ -391,6 +397,7 @@ class Model {
         this.OnlinePlayers.forEach(p => {
             p.move(t);
         });
+        this.Camera.update(this, t);
     }
 }
 exports.default = Model;
@@ -403,20 +410,19 @@ exports.default = Model;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const AbstractPlayer_1 = __webpack_require__(0);
-const Vector_1 = __webpack_require__(1);
-const ACCELERATION = new Vector_1.default(0.0, 0.01);
+const AbstractPlayer_1 = __webpack_require__(1);
+const Vector_1 = __webpack_require__(0);
+const ACCELERATION = new Vector_1.default(0.04, 0.0);
 var tmp = 0;
 class Player extends AbstractPlayer_1.default {
     constructor(data, index) {
         super(data, 0);
         this.Force = false;
-        this.Position.set(-0.35, -0.2);
+        this.Position.set(0, -0.5);
         this.Index = index;
     }
     update(t) {
-        tmp += 3 * t;
-        this.updateVelocity(0.5 * Math.cos(0.8 * tmp), 0.42 * Math.sin(0.7 * tmp));
+        this.updateXVelocity(this.Force ? ACCELERATION.getX() : -ACCELERATION.getX());
     }
     updateData(data, time) {
         throw new Error("Method not implemented.");
@@ -435,8 +441,8 @@ exports.default = Player;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const AbstractPlayer_1 = __webpack_require__(0);
-const Vector_1 = __webpack_require__(1);
+const AbstractPlayer_1 = __webpack_require__(1);
+const Vector_1 = __webpack_require__(0);
 let tmp = new Vector_1.default(0.0, 0.0);
 class OnlinePlayer extends AbstractPlayer_1.default {
     constructor(data, zPos) {
@@ -457,6 +463,70 @@ exports.default = OnlinePlayer;
 
 /***/ }),
 /* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Vector_1 = __webpack_require__(0);
+const SPEED = 4.2;
+const Offset = new Vector_1.default(0.0, 1.0);
+let tmp = new Vector_1.default();
+class Camera {
+    constructor() {
+        this.Position = new Vector_1.default();
+        this.Velocity = new Vector_1.default();
+    }
+    update(model, t) {
+        Vector_1.default.axpy(t, this.Velocity, this.Position);
+        if (model.Player.Alive) {
+            this.setTarget(model.Player.Position);
+        }
+        else {
+            let target = tmp;
+            target.set(0, 0);
+            let alive = 0;
+            model.OnlinePlayers.forEach(p => {
+                if (p.Alive) {
+                    alive++;
+                    Vector_1.default.axpy(1, p.Position, target);
+                }
+            });
+            if (alive > 0) {
+                target.scale(1 / alive);
+                this.setTarget(target);
+            }
+            else {
+                this.Velocity.scale(0.9);
+            }
+        }
+    }
+    setTarget(target) {
+        if (target !== tmp) {
+            tmp.copyFrom(target);
+            target = tmp;
+        }
+        Vector_1.default.axpy(1, Offset, target);
+        Vector_1.default.axpy2(-1, this.Position, target, this.Velocity);
+        limitSpeed(this.Velocity);
+    }
+    setViewMatrix(view, model) {
+        view.makeZRotation(model.Rotation);
+        view.setEntry(0, 3, -this.Position.getX());
+        view.setEntry(1, 3, -this.Position.getY());
+    }
+}
+exports.default = Camera;
+function limitSpeed(vel) {
+    let l = vel.length();
+    if (l > SPEED) {
+        vel.scale(SPEED / l);
+    }
+}
+
+
+/***/ }),
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -488,7 +558,6 @@ class Map {
     }
     update(data) {
         console.assert(data.type === "map", "Map.update: Illegal Argument!");
-        console.log("Map update, " + (data.data.length / 4) + " segments");
         if (data.data.length % 4 === 0) {
             let n = data.data.length / 4;
             let k, o, j;
@@ -532,14 +601,14 @@ exports.default = Map;
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Renderer = __webpack_require__(10);
-const FPS = __webpack_require__(21);
+const Renderer = __webpack_require__(11);
+const FPS = __webpack_require__(22);
 var canvas;
 var drawAgain = false;
 var afterDraw;
@@ -583,19 +652,19 @@ function draw() {
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Matrix_1 = __webpack_require__(11);
-const MapRenderer = __webpack_require__(12);
-const PlayerRenderer = __webpack_require__(15);
+const Matrix_1 = __webpack_require__(12);
+const MapRenderer = __webpack_require__(13);
+const PlayerRenderer = __webpack_require__(16);
 var gl = null;
 var model = null;
 var projMatrix = new Matrix_1.default();
-var rotationMatrix = new Matrix_1.default();
+var viewMatrix = new Matrix_1.default();
 var transformMatrix = new Matrix_1.default();
 function init(canvas) {
     try {
@@ -609,6 +678,8 @@ function init(canvas) {
         alert("Unable to initialize WebGL. Your browser may not support it.");
         return;
     }
+    projMatrix.setEntry(3, 2, 1.0);
+    projMatrix.setEntry(3, 3, 0.0);
     resize(window.innerWidth, window.innerHeight);
     MapRenderer.init(gl);
     PlayerRenderer.init(gl);
@@ -642,13 +713,13 @@ function resize(width, height) {
 }
 exports.resize = resize;
 function updateTransformation() {
-    rotationMatrix.makeZRotation(model.Rotation);
-    Matrix_1.default.multiply(projMatrix, rotationMatrix, transformMatrix);
+    model.Camera.setViewMatrix(viewMatrix, model);
+    Matrix_1.default.multiply(projMatrix, viewMatrix, transformMatrix);
 }
 
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -743,7 +814,7 @@ exports.default = Matrix;
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -764,7 +835,7 @@ var bgColor = new Color_1.default(0.0, 0.6, 0.05);
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(13), __webpack_require__(14));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(14), __webpack_require__(15));
     vertexPosAttrib = gl.getAttribLocation(program, "vPosition");
     uniformPM = gl.getUniformLocation(program, "uPMatrix");
     uniformZ = gl.getUniformLocation(program, "zPos");
@@ -809,26 +880,26 @@ function drawLayer(proj, z) {
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\n\r\nuniform float zPos;\r\n\r\n//varying vec4 color;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n}"
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\n//varying vec4 color;\r\n\r\nvoid main(void) {\r\n\t//gl_FragColor = color;\r\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, 0.6); // blue\r\n}"
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(2);
-const TailRenderer = __webpack_require__(16);
+const TailRenderer = __webpack_require__(17);
 const RADIUS = 0.05;
 var gl = null;
 var buffer = null;
@@ -842,7 +913,7 @@ var data = new Float32Array(4 * 4);
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(19), __webpack_require__(20));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(20), __webpack_require__(21));
     vertexAttribPos = gl.getAttribLocation(program, "vPosition");
     vertexAttribCSQ = gl.getAttribLocation(program, "csqPosition");
     uniformColor = gl.getUniformLocation(program, "pColor");
@@ -893,14 +964,14 @@ exports.draw = draw;
 
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(2);
-const AbstractPlayer_1 = __webpack_require__(0);
+const AbstractPlayer_1 = __webpack_require__(1);
 var gl = null;
 var buffer = null;
 var program = null;
@@ -912,7 +983,7 @@ var uniformZ = null;
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(17), __webpack_require__(18));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(18), __webpack_require__(19));
     vertexAttribPos = gl.getAttribLocation(program, "vPosition");
     vertexAttribPow = gl.getAttribLocation(program, "vIntensity");
     uniformColor = gl.getUniformLocation(program, "pColor");
@@ -941,31 +1012,31 @@ exports.draw = draw;
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\nattribute float vIntensity;\r\n\r\nuniform float zPos;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvarying mediump float opacity;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n\r\n\topacity = vIntensity;\r\n}"
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying mediump float opacity;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = vec4(pColor.rgb, opacity);\r\n}"
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\nattribute vec2 csqPosition; // circle square position (one of the corners)\r\n\r\nuniform float zPos;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvarying vec2 cPos;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n\r\n\tcPos = csqPosition;\r\n}"
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying vec2 cPos;\r\n\r\nconst vec4 CENTER  = vec4(1.0, 1.0, 1.0, 1.0);\r\nconst vec4 OUTSIDE = vec4(0.0, 0.0, 0.0, 0.0);\r\n\r\nvoid main(void) {\r\n\t\r\n\tfloat d = dot(cPos,cPos);\r\n\r\n\tif(d < 1.0) { // inside\r\n\t\tfloat r = sqrt(d);\r\n\r\n\t\tif(r <= 0.5) {\r\n\t\t\tgl_FragColor = mix(CENTER, pColor, 2.0 * r);\r\n\t\t} else {\r\n\t\t\t//gl_FragColor = mix(pColor, OUTSIDE, 2.0 * r - 1.0);\r\n\t\t\tgl_FragColor = vec4(pColor.rgb, 2.0 - 2.0 * r);\r\n\t\t}\r\n\t} else { // outside\r\n\t\tgl_FragColor = OUTSIDE;\r\n\t}\r\n}"
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1005,7 +1076,7 @@ function updateDisplay() {
 
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1088,7 +1159,7 @@ document.addEventListener("keyup", function (e) {
 
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

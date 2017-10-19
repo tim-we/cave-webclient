@@ -5,7 +5,7 @@ import Color from "../View/Color";
 
 import { IPlayerInitData, IPlayerData } from "../Controller/ICommunication";
 
-const ACCELERATION: Vector = new Vector(0.0, 0.01);
+const ACCELERATION: Vector = new Vector(0.04, 0.0);
 
 var tmp: number = 0;
 
@@ -17,17 +17,15 @@ export default class Player extends AbstractPlayer {
 	constructor(data:IPlayerInitData, index: number) {
 		super(data, 0);
 
-		this.Position.set(-0.35, -0.2);
+		this.Position.set(0, -0.5);
 
 		this.Index = index;
 	}
 
 	public update(t:number):void {
-		tmp += 3 * t;
 
-		this.updateVelocity(
-			0.5 * Math.cos(0.8 * tmp),
-			0.42 * Math.sin(0.7 * tmp)
+		this.updateXVelocity(
+			this.Force ? ACCELERATION.getX() : -ACCELERATION.getX()
 		);
 	}
 
