@@ -82,7 +82,7 @@ export function draw(proj:Matrix): void {
 }
 
 function drawLayer(index: number, proj: Matrix): void {
-	let z: number = 0.04 + (index+1) * 0.08;
+	let z: number = 0.04 + 0.08 + index * 0.06;
 	// only draw (&increment stencil) where stencil value is `index`
 	gl.stencilFunc(gl.LEQUAL, index, 0xFF);
 

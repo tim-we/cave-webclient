@@ -933,7 +933,7 @@ function draw(proj) {
 }
 exports.draw = draw;
 function drawLayer(index, proj) {
-    let z = 0.04 + (index + 1) * 0.08;
+    let z = 0.04 + 0.08 + index * 0.06;
     gl.stencilFunc(gl.LEQUAL, index, 0xFF);
     gl.uniform1f(uniformZ, z);
     proj.uniform(gl, uniformPM);

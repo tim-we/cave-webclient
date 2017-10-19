@@ -86,6 +86,7 @@ export function draw(transform: Matrix, player: AbstractPlayer) {
 	// do not change (keep) stencil values
 	gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
 	// do not draw on background (0) ("inside the map")
+	// 0 < value
 	gl.stencilFunc(gl.LESS, 0, 0xFF);
 
 	transform.uniform(gl, uniformPM);
