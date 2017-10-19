@@ -1,26 +1,10 @@
 import { IServerMapUpdate } from "../Controller/ICommunication";
 
-const N: number = 1; // number of segments
-const SEGMENT_SIZE: number = 2 * 3 * 2; // 2 2D triangles (3 points)
+const N: number = 50; // number of segments
+const SEGMENT_SIZE: number = 2 * 3 * 2; // 2 2D triangles (2*3 points)
 const SEGMENT_DATA_SIZE = 4 * 2; // 4 2D points
 
 var tmp = new Float32Array(SEGMENT_DATA_SIZE);
-
-/*function setUpExampleData(map:Map) {
-	console.assert(N === 1, "invalid number of segments");
-
-	let i = 0;
-	let data = new Float32Array(4 * 2);
-
-	data[i++] = -0.8; data[i++] = -0.5;
-	data[i++] =  0.2; data[i++] = -0.5;
-	data[i++] =  0.5; data[i++] =  0.5;
-	data[i++] = -0.5; data[i++] =  0.5;
-
-	for (i = 0; i < 4; i++) {
-		map.updatePoint(0, i, data);
-	}
-}*/
 
 export default class Map {
 	public data: Float32Array;
@@ -30,21 +14,34 @@ export default class Map {
 
 	private TopData:Float32Array = new Float32Array(2 * 2);
 
-	constructor(initData:number[]) {
+	constructor(initData: number[]) {
+		console.log("local segment buffer size: " + N);
+
 		this.data = new Float32Array(SEGMENT_SIZE * N);
 		this.version = 0;
 
+		console.assert(
+			initData.length === SEGMENT_DATA_SIZE,
+			"Map: illegal init data (length: " + initData.length + ")"
+		);
+
 		for (let i = 0; i < this.TopData.length; i++) {
-			this.TopData[i] = initData[i];
+			this.TopData[i] = initData[4 + i];
 		}
 
-		console.log(initData);
+		this.updateSegment(this.updateIndex, new Float32Array(initData));
+		this.updateIndexNext();
 
 		//setUpExampleData(this);
 	}
 
 	public numTriangles(): number {
 		return 2 * N;
+	}
+
+	private updateIndexNext(): void {
+		// index of the next segment that gets updated
+		this.updateIndex = (this.updateIndex+1) % N;
 	}
 
 	public update(data:IServerMapUpdate) {
@@ -82,48 +79,35 @@ export default class Map {
 				// update the segment
 				this.updateSegment(this.updateIndex, tmp);
 
-				// index of the next segment that gets updated
-				this.updateIndex = (this.updateIndex+1) % N;
+				this.updateIndexNext();
 			}
 		} else {
 			console.error("Map.update: invalid update length " + data.data.length);
 		}
 	}
 
-	private updateSegment(segmentIndex:number, data:Float32Array):void {
+	private updateSegment(segmentIndex: number, data: Float32Array): void {
 		console.assert(data.length === SEGMENT_DATA_SIZE, "Invalid segment data.");
 		console.assert(0 <= segmentIndex && segmentIndex < N, "Index out of bounds. (updateSegment)");
 
 		let offset: number = segmentIndex * SEGMENT_SIZE;
-		let i;
+		let i,k=0;
 
 		// triangle 012
-		for (i = 0; i<3; i++) { this.updatePoint(offset, i, data); }
+		for (i = 0; i<3; i++) { this.updatePoint(segmentIndex, k++, data, i); }
 
-		// triangle 023 = 230 = 234 % 4
-		for (i = 2; i <= 4; i++) { this.updatePoint(offset, i % 4, data); }
+		// triangle 123
+		for (i = 1; i < 4; i++) { this.updatePoint(segmentIndex, k++, data, i); }
 
 		this.version++;
 	}
 
-	private updatePoint(segment: number, pointIndex: number, data:Float32Array) {
-		let offset: number;
+	private updatePoint(segment: number, point: number, data: Float32Array, dataIndex:number) {
+		let offset:number = SEGMENT_SIZE * segment + 2 * point;
+		let dataOffset:number = dataIndex * 2;
 
-		if (pointIndex % 2 === 0) { // points 0,2 (shared)
-			offset = 2 * pointIndex;
-
-			this.data[offset]     = data[2 * pointIndex];
-			this.data[offset + 1] = data[2 * pointIndex + 1];
-
-			offset = pointIndex + 6;
-
-			this.data[offset]     = data[2 * pointIndex];
-			this.data[offset + 1] = data[2 * pointIndex + 1];
-		} else { // points 1,3 (not shared)
-			offset = 4 * pointIndex - 2;
-
-			this.data[offset]     = data[2 * pointIndex];
-			this.data[offset + 1] = data[2 * pointIndex + 1];
-		}
+		this.data[offset]		= data[dataOffset];
+		this.data[offset + 1]	= data[dataOffset+1];
 	}
+
 }

@@ -462,7 +462,7 @@ exports.default = OnlinePlayer;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const N = 1;
+const N = 42;
 const SEGMENT_SIZE = 2 * 3 * 2;
 const SEGMENT_DATA_SIZE = 4 * 2;
 var tmp = new Float32Array(SEGMENT_DATA_SIZE);
@@ -470,15 +470,21 @@ class Map {
     constructor(initData) {
         this.updateIndex = 0;
         this.TopData = new Float32Array(2 * 2);
+        console.log("local segment buffer size: " + N);
         this.data = new Float32Array(SEGMENT_SIZE * N);
         this.version = 0;
+        console.assert(initData.length === SEGMENT_DATA_SIZE, "Map: illegal init data (length: " + initData.length + ")");
         for (let i = 0; i < this.TopData.length; i++) {
-            this.TopData[i] = initData[i];
+            this.TopData[i] = initData[4 + i];
         }
-        console.log(initData);
+        this.updateSegment(this.updateIndex, new Float32Array(initData));
+        this.updateIndexNext();
     }
     numTriangles() {
         return 2 * N;
+    }
+    updateIndexNext() {
+        this.updateIndex = (this.updateIndex + 1) % N;
     }
     update(data) {
         console.assert(data.type === "map", "Map.update: Illegal Argument!");
@@ -495,7 +501,7 @@ class Map {
                     tmp[k + j] = this.TopData[j] = data.data[o + j];
                 }
                 this.updateSegment(this.updateIndex, tmp);
-                this.updateIndex = (this.updateIndex + 1) % N;
+                this.updateIndexNext();
             }
         }
         else {
@@ -506,30 +512,20 @@ class Map {
         console.assert(data.length === SEGMENT_DATA_SIZE, "Invalid segment data.");
         console.assert(0 <= segmentIndex && segmentIndex < N, "Index out of bounds. (updateSegment)");
         let offset = segmentIndex * SEGMENT_SIZE;
-        let i;
+        let i, k = 0;
         for (i = 0; i < 3; i++) {
-            this.updatePoint(offset, i, data);
+            this.updatePoint(segmentIndex, k++, data, i);
         }
-        for (i = 2; i <= 4; i++) {
-            this.updatePoint(offset, i % 4, data);
+        for (i = 1; i < 4; i++) {
+            this.updatePoint(segmentIndex, k++, data, i);
         }
         this.version++;
     }
-    updatePoint(segment, pointIndex, data) {
-        let offset;
-        if (pointIndex % 2 === 0) {
-            offset = 2 * pointIndex;
-            this.data[offset] = data[2 * pointIndex];
-            this.data[offset + 1] = data[2 * pointIndex + 1];
-            offset = pointIndex + 6;
-            this.data[offset] = data[2 * pointIndex];
-            this.data[offset + 1] = data[2 * pointIndex + 1];
-        }
-        else {
-            offset = 4 * pointIndex - 2;
-            this.data[offset] = data[2 * pointIndex];
-            this.data[offset + 1] = data[2 * pointIndex + 1];
-        }
+    updatePoint(segment, point, data, dataIndex) {
+        let offset = SEGMENT_SIZE * segment + 2 * point;
+        let dataOffset = dataIndex * 2;
+        this.data[offset] = data[dataOffset];
+        this.data[offset + 1] = data[dataOffset + 1];
     }
 }
 exports.default = Map;
@@ -755,6 +751,7 @@ exports.default = Matrix;
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(2);
 const Color_1 = __webpack_require__(3);
+const NUM_LAYERS = 4;
 var data = null;
 var bufferVersion = -1;
 var gl = null;
@@ -796,7 +793,7 @@ function draw(proj) {
     gl.enableVertexAttribArray(vertexPosAttrib);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.vertexAttribPointer(vertexPosAttrib, 2, gl.FLOAT, false, 0, 0);
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 1; i <= NUM_LAYERS; i++) {
         drawLayer(proj, 0.05 + i * 0.1);
     }
     if (bufferVersion < data.version) {

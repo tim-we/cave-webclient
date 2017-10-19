@@ -5,6 +5,8 @@ import Color from "./Color";
 import Map from "../Model/Map";
 import Matrix from "../Model/Matrix";
 
+const NUM_LAYERS:number = 4;
+
 var data: Map = null;
 var bufferVersion: number = -1;
 
@@ -66,7 +68,7 @@ export function draw(proj:Matrix): void {
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.vertexAttribPointer(vertexPosAttrib, 2, gl.FLOAT, false, 0, 0);
 	
-	for(let i=1; i<=4; i++) {
+	for(let i=1; i<=NUM_LAYERS; i++) {
 		drawLayer(proj, 0.05 + i*0.1);
 	}
 
