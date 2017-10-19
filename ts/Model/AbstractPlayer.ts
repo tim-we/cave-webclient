@@ -90,6 +90,7 @@ export default abstract class AbstractPlayer {
 
 	protected die() {
 		this.Alive = false;
+		this.Velocity.set(0, 0);
 	}
 
 	public static getTailVertexCount(): number{

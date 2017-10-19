@@ -33,7 +33,8 @@ export default class Player extends AbstractPlayer {
 		throw new Error("Method not implemented.");
 	}
 
-	protected die() {
+	public die() {
+		console.log("The player died.");
 		super.die();
 	}
 }

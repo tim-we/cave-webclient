@@ -42,11 +42,11 @@ window.addEventListener("load", () => {
 
 function mainloop() {
 	if (model) {
-		if (model.Player.Alive) {
-			model.Player.Force = UserInput.isPressed();
-		}
+		model.Player.Force = UserInput.isPressed();
 
-		model.update();
+		if (model.aliveCount() > 0) {
+			model.update();
+		}
 	}
 
 	/*if (tmp++ > 42) {

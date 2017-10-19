@@ -183,6 +183,7 @@ class AbstractPlayer {
     }
     die() {
         this.Alive = false;
+        this.Velocity.set(0, 0);
     }
     static getTailVertexCount() {
         return exports.TAILLENGTH * 2;
@@ -313,10 +314,10 @@ window.addEventListener("load", () => {
 });
 function mainloop() {
     if (model) {
-        if (model.Player.Alive) {
-            model.Player.Force = UserInput.isPressed();
+        model.Player.Force = UserInput.isPressed();
+        if (model.aliveCount() > 0) {
+            model.update();
         }
-        model.update();
     }
 }
 function serverUpdateHandler(data) {
@@ -353,7 +354,7 @@ class Model {
         this.OnlinePlayers = new Array(n - 1);
         let z = 0.2;
         let j = 0;
-        this.Player = new Player_1.default(data.playerInitData[data.index], 0);
+        this.Player = new Player_1.default(data.playerInitData[data.index], 0.05);
         for (let i = 0; i < n - 1; i++) {
             if (data.index === i) {
                 j++;
@@ -387,17 +388,33 @@ class Model {
         }
     }
     update() {
-        console.log("model update");
         let d = performance.now() - this.LastUpdate;
         this.LastUpdate = performance.now();
         let t = d / 1000;
         this.Time = Math.min(this.Time + t, this.NextTime);
-        this.Player.move(t);
-        this.Player.update(t);
+        if (this.Player.Alive) {
+            this.Player.move(t);
+            if (this.Map.isInside(this.Player.Position)) {
+                this.Player.update(t);
+            }
+            else {
+                this.Player.move(-0.75 * t);
+                this.Player.die();
+            }
+        }
         this.OnlinePlayers.forEach(p => {
             p.move(t);
         });
         this.Camera.update(this, t);
+    }
+    aliveCount() {
+        let n = this.Player.Alive ? 1 : 0;
+        this.OnlinePlayers.forEach(p => {
+            if (p.Alive) {
+                n++;
+            }
+        });
+        return n;
     }
 }
 exports.default = Model;
@@ -428,6 +445,7 @@ class Player extends AbstractPlayer_1.default {
         throw new Error("Method not implemented.");
     }
     die() {
+        console.log("The player died.");
         super.die();
     }
 }
@@ -539,6 +557,7 @@ var tmp = new Float32Array(SEGMENT_DATA_SIZE);
 class Map {
     constructor(initData) {
         this.updateIndex = 0;
+        this.insideCheckIndex = 0;
         this.TopData = new Float32Array(2 * 2);
         console.log("local segment buffer size: " + N);
         this.data = new Float32Array(SEGMENT_SIZE * N);
@@ -595,6 +614,37 @@ class Map {
         let dataOffset = dataIndex * 2;
         this.data[offset] = data[dataOffset];
         this.data[offset + 1] = data[dataOffset + 1];
+    }
+    isInside(p) {
+        let n = 0;
+        let i = this.insideCheckIndex;
+        let yTop, yBottom;
+        while (n < N) {
+            let offset = i * SEGMENT_SIZE;
+            yBottom = this.data[offset + 1];
+            yTop = this.data[offset + 5];
+            if (yBottom <= p.getY() && p.getY() <= yTop) {
+                this.insideCheckIndex = i;
+                if (n > 1) {
+                    console.log("something weird is going on here");
+                }
+                return this.isInsideSegment(i, p);
+            }
+            else {
+                i = (i + 1) % N;
+            }
+            n++;
+        }
+    }
+    isInsideSegment(index, p) {
+        let offset = index * SEGMENT_SIZE;
+        let yBottom = this.data[offset + 1];
+        let yTop = this.data[offset + 5];
+        let yDelta = yTop - yBottom;
+        let rel = (p.getY() - yBottom) / yDelta;
+        let left = this.data[offset] + rel * (this.data[offset + 4] - this.data[offset]);
+        let right = this.data[offset + 2] + rel * (this.data[offset + 6] - this.data[offset + 2]);
+        return left <= p.getX() && p.getX() <= right;
     }
 }
 exports.default = Map;
@@ -822,7 +872,7 @@ exports.default = Matrix;
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(2);
 const Color_1 = __webpack_require__(3);
-const NUM_LAYERS = 4;
+const NUM_LAYERS = 6;
 var data = null;
 var bufferVersion = -1;
 var gl = null;
@@ -865,7 +915,7 @@ function draw(proj) {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.vertexAttribPointer(vertexPosAttrib, 2, gl.FLOAT, false, 0, 0);
     for (let i = 1; i <= NUM_LAYERS; i++) {
-        drawLayer(proj, 0.05 + i * 0.1);
+        drawLayer(proj, 0.04 + i * 0.08);
     }
     if (bufferVersion < data.version) {
         setTimeout(updateBuffer, 0);
@@ -889,7 +939,7 @@ module.exports = "attribute vec2 vPosition;\r\n\r\nuniform float zPos;\r\n\r\n//
 /* 15 */
 /***/ (function(module, exports) {
 
-module.exports = "precision mediump float;\r\n\r\n//varying vec4 color;\r\n\r\nvoid main(void) {\r\n\t//gl_FragColor = color;\r\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, 0.6); // blue\r\n}"
+module.exports = "precision mediump float;\r\n\r\n//varying vec4 color;\r\n\r\nvoid main(void) {\r\n\t//gl_FragColor = color;\r\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, 0.55); // blue\r\n}"
 
 /***/ }),
 /* 16 */

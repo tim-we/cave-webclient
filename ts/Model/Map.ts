@@ -1,4 +1,5 @@
 import { IServerMapUpdate } from "../Controller/ICommunication";
+import Vector from "./Vector";
 
 const N: number = 50; // number of segments
 const SEGMENT_SIZE: number = 2 * 3 * 2; // 2 2D triangles (2*3 points)
@@ -10,7 +11,8 @@ export default class Map {
 	public data: Float32Array;
 	public version: number;
 
-	private updateIndex:number = 0;
+	private updateIndex: number = 0;
+	private insideCheckIndex: number = 0;
 
 	private TopData:Float32Array = new Float32Array(2 * 2);
 
@@ -108,6 +110,46 @@ export default class Map {
 
 		this.data[offset]		= data[dataOffset];
 		this.data[offset + 1]	= data[dataOffset+1];
+	}
+
+	public isInside(p: Vector): boolean {
+		let n: number = 0;
+		let i = this.insideCheckIndex;
+		let yTop: number, yBottom: number;
+
+		while (n < N) {
+			let offset: number = i * SEGMENT_SIZE;
+
+			yBottom = this.data[offset + 1];
+			yTop	= this.data[offset + 5];
+
+			if (yBottom <= p.getY() && p.getY() <= yTop) {
+				this.insideCheckIndex = i;
+
+				if (n > 1) { console.log("something weird is going on here"); }
+
+				return this.isInsideSegment(i, p);
+			} else {
+				i = (i+1) % N;
+			}
+
+			n++;
+		}
+	}
+
+	private isInsideSegment(index: number, p: Vector): boolean {
+		let offset: number = index * SEGMENT_SIZE;
+
+		let yBottom: number = this.data[offset + 1];
+		let yTop: number	= this.data[offset + 5];
+		let yDelta: number = yTop - yBottom;
+		
+		let rel: number = (p.getY() - yBottom) / yDelta;
+
+		let left: number = this.data[offset] + rel * (this.data[offset + 4] - this.data[offset]);
+		let right: number = this.data[offset + 2] + rel * (this.data[offset + 6] - this.data[offset + 2]);
+
+		return left <= p.getX() && p.getX() <= right;
 	}
 
 }

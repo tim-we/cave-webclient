@@ -49,7 +49,7 @@ export default class Model {
 		let z: number = 0.2;
 		let j: number = 0;
 
-		this.Player = new Player(data.playerInitData[data.index], 0);
+		this.Player = new Player(data.playerInitData[data.index], 0.05);
 
 		for (let i = 0; i < n - 1; i++) {
 			
@@ -97,7 +97,6 @@ export default class Model {
 
 	public update(): void {
 		//if (this.TimeDelta <= 0.0) { return; }
-		console.log("model update");
 
 		// d = time since this method was called previously
 		let d: number = performance.now() - this.LastUpdate; //ms
@@ -109,9 +108,19 @@ export default class Model {
 		// update current model time
 		this.Time = Math.min(this.Time + t, this.NextTime);
 
-		// move player & update velocity
-		this.Player.move(t);
-		this.Player.update(t);
+		if (this.Player.Alive) {
+			// move player
+			this.Player.move(t);
+		
+			// collision test
+			if (this.Map.isInside(this.Player.Position)) {
+				// update velocity
+				this.Player.update(t);
+			} else {
+				this.Player.move(-0.75 * t);
+				this.Player.die();
+			}
+		}
 
 		// update other players
 		this.OnlinePlayers.forEach(p => {
@@ -120,5 +129,15 @@ export default class Model {
 
 		// update camera
 		this.Camera.update(this, t);
+	}
+
+	public aliveCount(): number {
+		let n: number = this.Player.Alive ? 1 : 0;
+
+		this.OnlinePlayers.forEach(p => {
+			if (p.Alive) { n++; }
+		});
+
+		return n;
 	}
 }
