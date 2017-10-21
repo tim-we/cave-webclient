@@ -10,10 +10,12 @@ import {
 	IServerGameStateUpdate,
 	IServerGameStart,
 	IServerLogMessage,
-	IServerRejection
+	IServerRejection,
+	IServerLobbyUpdate
 } from "./ICommunication";
 
 import Model from "../Model/Model";
+import * as GameLog from "../View/GameLog";
 
 type wsMessageHandler = (data:IServerMessage) => void;
 
@@ -26,21 +28,19 @@ export default class Server implements Connection {
 		this.url = (secure ? "wss":"ws") + "://" + host + ":" + port;
 	}
 
-	public connect(name:string):Promise<void> {
+	public connect(name:string):Promise<IServerLobbyUpdate> {
 
-		return new Promise<void>((resolve, reject) => {
+		return new Promise<IServerLobbyUpdate>((resolve, reject) => {
+			let resolved: boolean = false;
+
 			if(this.isConnected()) {
 				reject(new Error("Already connected."));
 			} else {
-				console.log("Connecting...");
 				this.ws = new WebSocket(this.url);
 				
 				this.ws.onopen = () => {
-					console.log("Connected.");
 
 					this.sendInit(name);
-
-					resolve();
 				};
 
 				this.ws.onclose = () => {
@@ -62,10 +62,22 @@ export default class Server implements Connection {
 					}
 
 					if(data.type === "msg") {
-						console.log("Server Message: " + (<IServerLogMessage>data).msg);
-					} else if(data.type === "reject") {
-						console.log("Rejected by server! Reason: " + (<IServerRejection>data).reason);
+						GameLog.log("Server Message: " + (<IServerLogMessage>data).msg);
+					} else if (data.type === "reject") {
+						let text: string = "Rejected by server! Reason: " + (<IServerRejection>data).reason;
+						reject(text);
 					} else {
+						if (resolved === false && data.type === "lobby") {
+							resolved = true;
+							
+							if ((<IServerLobbyUpdate>data).msg) {
+								GameLog.log((<IServerLobbyUpdate>data).msg);
+							}
+							
+							resolve();
+							return;
+						}
+
 						if(this.wsMsgHandler) {
 							this.wsMsgHandler(data);
 						} else {

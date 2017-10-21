@@ -4,6 +4,7 @@ import Vector from "./Vector";
 import Color from "../View/Color";
 
 import { IPlayerInitData, IPlayerData } from "../Controller/ICommunication";
+import * as GameLog from "../View/GameLog";
 
 const ACCELERATION: Vector = new Vector(0.04, 0.0);
 
@@ -34,7 +35,7 @@ export default class Player extends AbstractPlayer {
 	}
 
 	public die() {
-		console.log("The player died.");
+		GameLog.log("The player died.", true);
 		super.die();
 	}
 }

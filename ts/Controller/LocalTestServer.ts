@@ -1,11 +1,14 @@
+declare function require(name: string): any;
+
 import {
 	Connection,
 	GameUpdateListener
 } from "./IConnection";
 
 import {
-	IServerGameStateUpdate, 
-	IServerGameStart 
+	IServerGameStateUpdate,
+	IServerGameStart,
+	IServerLobbyUpdate
 } from "./ICommunication";
 
 import Model from "../Model/Model";
@@ -24,9 +27,9 @@ export default class LocalTestServer implements Connection {
 		this.RoundStart = Date.now() + 3;
 	}
 
-	public connect():Promise<void> {
+	public connect():Promise<IServerLobbyUpdate> {
 
-		return new Promise<void>((resolve, reject) => {
+		return new Promise<IServerLobbyUpdate>((resolve, reject) => {
 			if(this.connected) {
 				reject();
 			} else {
@@ -51,7 +54,11 @@ export default class LocalTestServer implements Connection {
 					}
 				}, UPDATE_RATE);
 
-				resolve();
+				resolve({
+					type: "lobby",
+					players: [],
+					msg: "A player has connected."
+				});
 			}
 		});
 
@@ -72,10 +79,23 @@ export default class LocalTestServer implements Connection {
 					playerInitData: [
 						{ name: "Bob", color: 0 }
 					],
-					mapInit: [ -.9, 0, .9, 0, -.9, .75, .9, .75 ]
+					mapInit: [ -.9, -1, .9, -1, -.9, .75, .9, .75 ]
 				});
+
+				setTimeout(_this => { _this.sendMapUpdate(0); }, 0, this);
+				setTimeout(_this => { _this.sendMapUpdate(1); }, 100, this);
 			}
 		});
+	}
+
+	private sendMapUpdate(i: number): void {
+		if (!this.callback) { return; }
+
+		if (i === 0) {
+			this.callback(require("../../data/mapData1.json"));
+		} else {
+			this.callback(require("../../data/mapData2.json"));
+		}
 	}
 
 	public disconnect() {

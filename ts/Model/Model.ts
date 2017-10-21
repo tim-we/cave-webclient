@@ -88,7 +88,7 @@ export default class Model {
 			p.updateData(data.pdata[i], this.TimeDelta);
 		});
 
-		this.RotationDelta = data.rotation - this.Rotation;
+		//this.RotationDelta = 1000 * (data.rotation - this.Rotation) / this.TimeDelta;
 
 		if(data.speed !== this.Speed) {
 			// TODO: update velocity for all players
@@ -108,24 +108,29 @@ export default class Model {
 		// update current model time
 		this.Time = Math.min(this.Time + t, this.NextTime);
 
-		if (this.Player.Alive) {
-			// move player
-			this.Player.move(t);
-		
-			// collision test
-			if (this.Map.isInside(this.Player.Position)) {
-				// update velocity
-				this.Player.update(t);
-			} else {
-				this.Player.move(-0.75 * t);
-				this.Player.die();
+		if (this.Time >= 0) {
+			if (this.Player.Alive) {
+				// move player
+				this.Player.move(t);
+			
+				// collision test
+				if (this.Map.isInside(this.Player.Position)) {
+					// update velocity
+					this.Player.update(t);
+				} else {
+					this.Player.move(-0.75 * t);
+					this.Player.die();
+				}
 			}
-		}
+	
+			// update other players
+			this.OnlinePlayers.forEach(p => {
+				p.move(t);
+			});
 
-		// update other players
-		this.OnlinePlayers.forEach(p => {
-			p.move(t);
-		});
+			// update rotation
+			this.Rotation += t * this.RotationDelta;
+		}
 
 		// update camera
 		this.Camera.update(this, t);

@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 4);
+/******/ 	return __webpack_require__(__webpack_require__.s = 5);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -138,7 +138,7 @@ exports.default = Vector;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Vector_1 = __webpack_require__(0);
-const Color_1 = __webpack_require__(3);
+const Color_1 = __webpack_require__(4);
 exports.TAILLENGTH = 80;
 const TAILNODESIZE = 2 * (2 + 1);
 const TAILWIDTH = 0.005;
@@ -214,6 +214,58 @@ function clamp(value, min, max) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var logDOMRef = null;
+window.addEventListener("load", () => {
+    logDOMRef = document.getElementById("log");
+});
+const DURATION = 4200;
+class LogEntry {
+    constructor(text, classes) {
+        this.time = Date.now();
+        let p = document.createElement("p");
+        p.innerText = text;
+        if (classes) {
+            classes.forEach(c => p.classList.add(c));
+        }
+        this.ref = p;
+        logDOMRef.appendChild(p);
+    }
+    hasExpired() {
+        return (Date.now() - this.time) > DURATION;
+    }
+    remove() {
+        this.ref.remove();
+    }
+}
+var visibleLogs = [];
+function log(text, log2console = false) {
+    if (log2console) {
+        console.log(text);
+    }
+    visibleLogs.push(new LogEntry(text));
+}
+exports.log = log;
+function error(text, log2console = true) {
+    if (log2console) {
+        console.error(text);
+    }
+    visibleLogs.push(new LogEntry(text, ["error"]));
+}
+exports.error = error;
+setInterval(() => {
+    while (visibleLogs.length > 0 && visibleLogs[0].hasExpired()) {
+        visibleLogs.shift().remove();
+    }
+}, 500);
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 function makeShader(gl, type, source) {
     console.assert(type === gl.VERTEX_SHADER || type === gl.FRAGMENT_SHADER);
     let shader = gl.createShader(type);
@@ -250,7 +302,7 @@ exports.createProgramFromSource = createProgramFromSource;
 
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -284,32 +336,37 @@ exports.default = Color;
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Model_1 = __webpack_require__(5);
-const View = __webpack_require__(10);
-const UserInput = __webpack_require__(23);
-const Server_1 = __webpack_require__(24);
+const Model_1 = __webpack_require__(6);
+const View = __webpack_require__(11);
+const UserInput = __webpack_require__(24);
+const GameLog = __webpack_require__(2);
+const Server_1 = __webpack_require__(25);
 var connection = new Server_1.default();
 var model = null;
 window.addEventListener("load", () => {
+    GameLog.log("Connecting...");
     connection.connect("Ulysses")
-        .then(() => connection.waitForStart(), (reason) => {
-        console.log("Connection failed: " + reason);
+        .then(() => {
+        GameLog.log("Waiting for round to start...");
+        return connection.waitForStart();
+    }, (reason) => {
+        GameLog.error("Connection failed: " + reason);
     })
         .then((data) => {
         connection.setUpdateListener(serverUpdateHandler);
-        console.log("Starting game!");
+        GameLog.log("Starting game!");
         model = new Model_1.default(data);
         View.init(model, mainloop);
         mainloop();
         View.startDrawLoop();
     }).catch((reason) => {
-        console.log("Something went wrong: " + reason);
+        GameLog.error("Something went wrong: " + reason);
     });
 });
 function mainloop() {
@@ -328,16 +385,16 @@ function serverUpdateHandler(data) {
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Player_1 = __webpack_require__(6);
-const OnlinePlayer_1 = __webpack_require__(7);
-const Camera_1 = __webpack_require__(8);
-const Map_1 = __webpack_require__(9);
+const Player_1 = __webpack_require__(7);
+const OnlinePlayer_1 = __webpack_require__(8);
+const Camera_1 = __webpack_require__(9);
+const Map_1 = __webpack_require__(10);
 class Model {
     constructor(data) {
         this.Camera = new Camera_1.default();
@@ -383,7 +440,6 @@ class Model {
         this.OnlinePlayers.forEach((p, i) => {
             p.updateData(data.pdata[i], this.TimeDelta);
         });
-        this.RotationDelta = data.rotation - this.Rotation;
         if (data.speed !== this.Speed) {
         }
     }
@@ -392,19 +448,22 @@ class Model {
         this.LastUpdate = performance.now();
         let t = d / 1000;
         this.Time = Math.min(this.Time + t, this.NextTime);
-        if (this.Player.Alive) {
-            this.Player.move(t);
-            if (this.Map.isInside(this.Player.Position)) {
-                this.Player.update(t);
+        if (this.Time >= 0) {
+            if (this.Player.Alive) {
+                this.Player.move(t);
+                if (this.Map.isInside(this.Player.Position)) {
+                    this.Player.update(t);
+                }
+                else {
+                    this.Player.move(-0.75 * t);
+                    this.Player.die();
+                }
             }
-            else {
-                this.Player.move(-0.75 * t);
-                this.Player.die();
-            }
+            this.OnlinePlayers.forEach(p => {
+                p.move(t);
+            });
+            this.Rotation += t * this.RotationDelta;
         }
-        this.OnlinePlayers.forEach(p => {
-            p.move(t);
-        });
         this.Camera.update(this, t);
     }
     aliveCount() {
@@ -421,7 +480,7 @@ exports.default = Model;
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -429,6 +488,7 @@ exports.default = Model;
 Object.defineProperty(exports, "__esModule", { value: true });
 const AbstractPlayer_1 = __webpack_require__(1);
 const Vector_1 = __webpack_require__(0);
+const GameLog = __webpack_require__(2);
 const ACCELERATION = new Vector_1.default(0.04, 0.0);
 var tmp = 0;
 class Player extends AbstractPlayer_1.default {
@@ -445,7 +505,7 @@ class Player extends AbstractPlayer_1.default {
         throw new Error("Method not implemented.");
     }
     die() {
-        console.log("The player died.");
+        GameLog.log("The player died.", true);
         super.die();
     }
 }
@@ -453,7 +513,7 @@ exports.default = Player;
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -480,7 +540,7 @@ exports.default = OnlinePlayer;
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -488,7 +548,7 @@ exports.default = OnlinePlayer;
 Object.defineProperty(exports, "__esModule", { value: true });
 const Vector_1 = __webpack_require__(0);
 const SPEED = 4.2;
-const Offset = new Vector_1.default(0.0, 1.0);
+const Offset = new Vector_1.default(0.0, 0.8);
 let tmp = new Vector_1.default();
 class Camera {
     constructor() {
@@ -544,7 +604,7 @@ function limitSpeed(vel) {
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -559,7 +619,6 @@ class Map {
         this.updateIndex = 0;
         this.insideCheckIndex = 0;
         this.TopData = new Float32Array(2 * 2);
-        console.log("local segment buffer size: " + N);
         this.data = new Float32Array(SEGMENT_SIZE * N);
         this.version = 0;
         console.assert(initData.length === SEGMENT_DATA_SIZE, "Map: illegal init data (length: " + initData.length + ")");
@@ -626,7 +685,7 @@ class Map {
             if (yBottom <= p.getY() && p.getY() <= yTop) {
                 this.insideCheckIndex = i;
                 if (n > 1) {
-                    console.log("something weird is going on here");
+                    console.log("Map: unexpected data order");
                 }
                 return this.isInsideSegment(i, p);
             }
@@ -651,14 +710,14 @@ exports.default = Map;
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Renderer = __webpack_require__(11);
-const FPS = __webpack_require__(22);
+const Renderer = __webpack_require__(12);
+const FPS = __webpack_require__(23);
 var canvas;
 var drawAgain = false;
 var afterDraw;
@@ -702,20 +761,19 @@ function draw() {
 
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Matrix_1 = __webpack_require__(12);
-const MapRenderer = __webpack_require__(13);
-const PlayerRenderer = __webpack_require__(16);
+const Matrix_1 = __webpack_require__(13);
+const MapRenderer = __webpack_require__(14);
+const PlayerRenderer = __webpack_require__(17);
 const glOptions = {
     alpha: false,
     stencil: true,
     depth: false,
-    antialias: false
 };
 var gl = null;
 var model = null;
@@ -780,7 +838,7 @@ function updateTransformation() {
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -875,14 +933,14 @@ exports.default = Matrix;
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShaderTools_1 = __webpack_require__(2);
-const Color_1 = __webpack_require__(3);
+const ShaderTools_1 = __webpack_require__(3);
+const Color_1 = __webpack_require__(4);
 const NUM_LAYERS = 6;
 var data = null;
 var bufferVersion = -1;
@@ -896,7 +954,7 @@ var bgColor = new Color_1.default(0.0, 0.6, 0.05);
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(14), __webpack_require__(15));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(15), __webpack_require__(16));
     vertexPosAttrib = gl.getAttribLocation(program, "vPosition");
     uniformPM = gl.getUniformLocation(program, "uPMatrix");
     uniformZ = gl.getUniformLocation(program, "zPos");
@@ -944,26 +1002,26 @@ function drawLayer(index, proj) {
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\n\r\nuniform float zPos;\r\n\r\n//varying vec4 color;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n}"
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\n//varying vec4 color;\r\n\r\nvoid main(void) {\r\n\t//gl_FragColor = color;\r\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, 0.55); // blue\r\n}"
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShaderTools_1 = __webpack_require__(2);
-const TailRenderer = __webpack_require__(17);
+const ShaderTools_1 = __webpack_require__(3);
+const TailRenderer = __webpack_require__(18);
 const RADIUS = 0.05;
 var gl = null;
 var buffer = null;
@@ -988,7 +1046,7 @@ function init(_gl) {
     data[6] = 1.0;
     data[7] = 1.0;
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(20), __webpack_require__(21));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(21), __webpack_require__(22));
     vertexAttribSquare = gl.getAttribLocation(program, "squareCorner");
     uniformRadius = gl.getUniformLocation(program, "radius");
     uniformColor = gl.getUniformLocation(program, "pColor");
@@ -1020,13 +1078,13 @@ exports.draw = draw;
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShaderTools_1 = __webpack_require__(2);
+const ShaderTools_1 = __webpack_require__(3);
 const AbstractPlayer_1 = __webpack_require__(1);
 var gl = null;
 var buffer = null;
@@ -1039,7 +1097,7 @@ var uniformZ = null;
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(18), __webpack_require__(19));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(19), __webpack_require__(20));
     vertexAttribPos = gl.getAttribLocation(program, "vPosition");
     vertexAttribPow = gl.getAttribLocation(program, "vIntensity");
     uniformColor = gl.getUniformLocation(program, "pColor");
@@ -1070,31 +1128,31 @@ exports.draw = draw;
 
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\nattribute float vIntensity;\r\n\r\nuniform float zPos;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvarying mediump float opacity;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n\r\n\topacity = vIntensity;\r\n}"
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying mediump float opacity;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = vec4(pColor.rgb, opacity);\r\n}"
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports) {
 
-module.exports = "//attribute vec2 vPosition;\r\nattribute vec2 squareCorner;\r\n//attribute vec2 csqPosition; // circle square position (one of the corners)\r\n\r\nuniform vec2 playerPosition;\r\nuniform float zPos;\r\nuniform float radius;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\n// interpolate for the fragment-shader\r\nvarying vec2 cPos;\r\n\r\nvoid main(void) {\r\n\tfloat x = playerPosition.x + radius * squareCorner.x;\r\n\tfloat y = playerPosition.y + radius * squareCorner.y;\r\n\r\n\tgl_Position = uPMatrix * vec4(x, y, zPos, 1.0);\r\n\r\n\tcPos = squareCorner;\r\n}"
+module.exports = "attribute vec2 squareCorner;\r\n\r\nuniform vec2 playerPosition;\r\nuniform float zPos;\r\nuniform float radius;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\n// interpolate for the fragment-shader\r\nvarying vec2 cPos;\r\n\r\nvoid main(void) {\r\n\tfloat x = playerPosition.x + radius * squareCorner.x;\r\n\tfloat y = playerPosition.y + radius * squareCorner.y;\r\n\r\n\tgl_Position = uPMatrix * vec4(x, y, zPos, 1.0);\r\n\r\n\tcPos = squareCorner;\r\n}"
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying vec2 cPos;\r\n\r\nconst vec4 CENTER  = vec4(1.0, 1.0, 1.0, 1.0);\r\nconst vec4 OUTSIDE = vec4(0.0, 0.0, 0.0, 0.0);\r\n\r\nvoid main(void) {\r\n\t\r\n\tfloat d = dot(cPos,cPos);\r\n\r\n\tif(d < 1.0) { // inside\r\n\t\tfloat r = sqrt(d);\r\n\r\n\t\tif(r <= 0.5) {\r\n\t\t\tgl_FragColor = mix(CENTER, pColor, 2.0 * r);\r\n\t\t} else {\r\n\t\t\t//gl_FragColor = mix(pColor, OUTSIDE, 2.0 * r - 1.0);\r\n\t\t\tgl_FragColor = vec4(pColor.rgb, 2.0 - 2.0 * r);\r\n\t\t}\r\n\t} else { // outside\r\n\t\tgl_FragColor = OUTSIDE;\r\n\t}\r\n}"
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1134,7 +1192,7 @@ function updateDisplay() {
 
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1217,12 +1275,13 @@ document.addEventListener("keyup", function (e) {
 
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const GameLog = __webpack_require__(2);
 class Server {
     constructor(secure = false, host = "localhost", port = 8080) {
         this.ws = null;
@@ -1230,16 +1289,14 @@ class Server {
     }
     connect(name) {
         return new Promise((resolve, reject) => {
+            let resolved = false;
             if (this.isConnected()) {
                 reject(new Error("Already connected."));
             }
             else {
-                console.log("Connecting...");
                 this.ws = new WebSocket(this.url);
                 this.ws.onopen = () => {
-                    console.log("Connected.");
                     this.sendInit(name);
-                    resolve();
                 };
                 this.ws.onclose = () => {
                     this.ws = null;
@@ -1258,12 +1315,21 @@ class Server {
                         return;
                     }
                     if (data.type === "msg") {
-                        console.log("Server Message: " + data.msg);
+                        GameLog.log("Server Message: " + data.msg);
                     }
                     else if (data.type === "reject") {
-                        console.log("Rejected by server! Reason: " + data.reason);
+                        let text = "Rejected by server! Reason: " + data.reason;
+                        reject(text);
                     }
                     else {
+                        if (resolved === false && data.type === "lobby") {
+                            resolved = true;
+                            if (data.msg) {
+                                GameLog.log(data.msg);
+                            }
+                            resolve();
+                            return;
+                        }
                         if (this.wsMsgHandler) {
                             this.wsMsgHandler(data);
                         }

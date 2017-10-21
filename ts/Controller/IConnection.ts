@@ -2,13 +2,14 @@ import Model from "../Model/Model";
 import {
 	IServerGameStart,
 	IServerGameStateUpdate,
-	IServerMapUpdate
+	IServerMapUpdate,
+	IServerLobbyUpdate
 } from "./ICommunication";
 
 export type GameUpdateListener = (data: IServerGameStateUpdate | IServerMapUpdate) => void;
 
 export interface Connection {
-	connect: (name:string) => Promise<void>;
+	connect: (name:string) => Promise<IServerLobbyUpdate>;
 
 	waitForStart: () => Promise<IServerGameStart>;
 

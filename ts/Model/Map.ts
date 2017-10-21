@@ -17,7 +17,6 @@ export default class Map {
 	private TopData:Float32Array = new Float32Array(2 * 2);
 
 	constructor(initData: number[]) {
-		console.log("local segment buffer size: " + N);
 
 		this.data = new Float32Array(SEGMENT_SIZE * N);
 		this.version = 0;
@@ -33,8 +32,6 @@ export default class Map {
 
 		this.updateSegment(this.updateIndex, new Float32Array(initData));
 		this.updateIndexNext();
-
-		//setUpExampleData(this);
 	}
 
 	public numTriangles(): number {
@@ -126,7 +123,7 @@ export default class Map {
 			if (yBottom <= p.getY() && p.getY() <= yTop) {
 				this.insideCheckIndex = i;
 
-				if (n > 1) { console.log("something weird is going on here"); }
+				if (n > 1) { console.log("Map: unexpected data order"); }
 
 				return this.isInsideSegment(i, p);
 			} else {

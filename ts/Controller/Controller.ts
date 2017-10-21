@@ -3,6 +3,7 @@ import * as View from "../View/View";
 import { Connection } from "./IConnection";
 
 import * as UserInput from "./UserInput";
+import * as GameLog from "../View/GameLog";
 
 import Server from "./Server";
 //import LocalTestServer from "./LocalTestServer";
@@ -19,24 +20,29 @@ var model: Model = null;
 
 window.addEventListener("load", () => {
 
+	GameLog.log("Connecting...");
+
 	connection.connect("Ulysses")
-	 .then(() => connection.waitForStart(), (reason) => {
-		 console.log("Connection failed: " + reason);
-	 })
-	 .then((data:IServerGameStart) => {
-		connection.setUpdateListener(serverUpdateHandler);
-		console.log("Starting game!");
+		.then(() => {
+			GameLog.log("Waiting for round to start...");
+			return connection.waitForStart();
+		}, (reason) => {
+			GameLog.error("Connection failed: " + reason);
+		})
+		.then((data:IServerGameStart) => {
+			connection.setUpdateListener(serverUpdateHandler);
+			GameLog.log("Starting game!");
 
-		model = new Model(data);
+			model = new Model(data);
 
-		View.init(model, mainloop);
+			View.init(model, mainloop);
 
-		mainloop();
-		
-		View.startDrawLoop();
-	}).catch((reason) => {
-		console.log("Something went wrong: " + reason);
-	});
+			mainloop();
+			
+			View.startDrawLoop();
+		}).catch((reason) => {
+			GameLog.error("Something went wrong: " + reason);
+		});
 	
 });
 

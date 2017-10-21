@@ -4,7 +4,7 @@ import Matrix from "./Matrix";
 
 const SPEED = 4.2;
 
-const Offset: Vector = new Vector(0.0, 1.0);
+const Offset: Vector = new Vector(0.0, 0.8);
 
 let tmp: Vector = new Vector();
 
