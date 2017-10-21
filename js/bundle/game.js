@@ -72,7 +72,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 class Vector {
     constructor(x = 0.0, y = 0.0) {
-        this.data = new Float64Array(2);
+        this.data = new Float32Array(2);
         this.data[0] = x;
         this.data[1] = y;
     }
@@ -712,8 +712,10 @@ const Matrix_1 = __webpack_require__(12);
 const MapRenderer = __webpack_require__(13);
 const PlayerRenderer = __webpack_require__(16);
 const glOptions = {
-    alpha: true,
+    alpha: false,
     stencil: true,
+    depth: false,
+    antialias: false
 };
 var gl = null;
 var model = null;
@@ -908,7 +910,7 @@ function setModelMap(map) {
 exports.setModelMap = setModelMap;
 function updateBuffer() {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data.data, gl.STREAM_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, data.data, gl.STATIC_DRAW);
     bufferVersion = data.version;
 }
 function draw(proj) {
@@ -966,60 +968,50 @@ const RADIUS = 0.05;
 var gl = null;
 var buffer = null;
 var program = null;
-var vertexAttribPos = -1;
-var vertexAttribCSQ = -1;
+var vertexAttribSquare = -1;
+var uniformRadius = null;
 var uniformColor = null;
 var uniformPM = null;
+var uniformPos = null;
 var uniformZ = null;
-var data = new Float32Array(4 * 4);
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    let data = new Float32Array(2 * 4);
+    data[0] = -1.0;
+    data[1] = -1.0;
+    data[2] = -1.0;
+    data[3] = 1.0;
+    data[4] = 1.0;
+    data[5] = -1.0;
+    data[6] = 1.0;
+    data[7] = 1.0;
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
     program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(20), __webpack_require__(21));
-    vertexAttribPos = gl.getAttribLocation(program, "vPosition");
-    vertexAttribCSQ = gl.getAttribLocation(program, "csqPosition");
+    vertexAttribSquare = gl.getAttribLocation(program, "squareCorner");
+    uniformRadius = gl.getUniformLocation(program, "radius");
     uniformColor = gl.getUniformLocation(program, "pColor");
     uniformPM = gl.getUniformLocation(program, "uPMatrix");
+    uniformPos = gl.getUniformLocation(program, "playerPosition");
     uniformZ = gl.getUniformLocation(program, "zPos");
-    data[2] = -1.0;
-    data[3] = -1.0;
-    data[6] = -1.0;
-    data[7] = 1.0;
-    data[10] = 1.0;
-    data[11] = -1.0;
-    data[14] = 1.0;
-    data[15] = 1.0;
     TailRenderer.init(_gl);
 }
 exports.init = init;
-function setUpBuffer(player) {
-    let x = player.Position.getX();
-    let y = player.Position.getY();
-    data[0] = x - RADIUS;
-    data[1] = y - RADIUS;
-    data[4] = x - RADIUS;
-    data[5] = y + RADIUS;
-    data[8] = x + RADIUS;
-    data[9] = y - RADIUS;
-    data[12] = x + RADIUS;
-    data[13] = y + RADIUS;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STREAM_DRAW);
-}
 function draw(transform, player) {
     gl.enable(gl.BLEND);
     TailRenderer.draw(transform, player);
     gl.useProgram(program);
-    setUpBuffer(player);
-    gl.enableVertexAttribArray(vertexAttribPos);
-    gl.enableVertexAttribArray(vertexAttribCSQ);
-    gl.vertexAttribPointer(vertexAttribPos, 2, gl.FLOAT, false, 4 * 4, 0);
-    gl.vertexAttribPointer(vertexAttribCSQ, 2, gl.FLOAT, false, 4 * 4, 2 * 4);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.enableVertexAttribArray(vertexAttribSquare);
+    gl.vertexAttribPointer(vertexAttribSquare, 2, gl.FLOAT, false, 2 * 4, 0);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
     gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
     gl.stencilFunc(gl.LESS, 0, 0xFF);
     transform.uniform(gl, uniformPM);
     gl.uniform1f(uniformZ, player.Z);
+    gl.uniform1f(uniformRadius, RADIUS);
+    gl.uniform2f(uniformPos, player.Position.getX(), player.Position.getY());
     player.Color.setUniform(gl, uniformColor);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.disable(gl.BLEND);
@@ -1093,7 +1085,7 @@ module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; /
 /* 20 */
 /***/ (function(module, exports) {
 
-module.exports = "attribute vec2 vPosition;\r\nattribute vec2 csqPosition; // circle square position (one of the corners)\r\n\r\nuniform float zPos;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvarying vec2 cPos;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n\r\n\tcPos = csqPosition;\r\n}"
+module.exports = "//attribute vec2 vPosition;\r\nattribute vec2 squareCorner;\r\n//attribute vec2 csqPosition; // circle square position (one of the corners)\r\n\r\nuniform vec2 playerPosition;\r\nuniform float zPos;\r\nuniform float radius;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\n// interpolate for the fragment-shader\r\nvarying vec2 cPos;\r\n\r\nvoid main(void) {\r\n\tfloat x = playerPosition.x + radius * squareCorner.x;\r\n\tfloat y = playerPosition.y + radius * squareCorner.y;\r\n\r\n\tgl_Position = uPMatrix * vec4(x, y, zPos, 1.0);\r\n\r\n\tcPos = squareCorner;\r\n}"
 
 /***/ }),
 /* 21 */

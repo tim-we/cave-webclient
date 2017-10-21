@@ -12,20 +12,31 @@ var gl: WebGLRenderingContext = null;
 var buffer: WebGLBuffer = null;
 var program: WebGLProgram = null;
 
-var vertexAttribPos: number = -1;
-var vertexAttribCSQ: number = -1;
+//var vertexAttribPos: number = -1;
+//var vertexAttribCSQ: number = -1;
+var vertexAttribSquare: number = -1;
 
+var uniformRadius: WebGLUniformLocation = null;
 var uniformColor: WebGLUniformLocation = null;
 var uniformPM: WebGLUniformLocation = null;
-var uniformZ: WebGLUniformLocation = null;
-
-var data: Float32Array = new Float32Array(4 * 4);
+var uniformPos: WebGLUniformLocation = null; // player xy position
+var uniformZ: WebGLUniformLocation = null; // player z position
 
 export function init(_gl: WebGLRenderingContext):void {
 	gl = _gl;
 
 	// set up buffer
 		buffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+	
+		let data: Float32Array = new Float32Array(2 * 4);
+		// set up constant data
+		data[0] = -1.0; data[1] = -1.0;
+		data[2] = -1.0; data[3] =  1.0;
+		data[4] =  1.0; data[5] = -1.0;
+		data[6] =  1.0; data[7] =  1.0;
+
+		gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
 	
 	// program
 		program = createProgramFromSource(
@@ -34,34 +45,16 @@ export function init(_gl: WebGLRenderingContext):void {
 			require("../../shader/player.frag")
 		);
 	
-		vertexAttribPos = gl.getAttribLocation(program, "vPosition");
-		vertexAttribCSQ = gl.getAttribLocation(program, "csqPosition");
+		vertexAttribSquare = gl.getAttribLocation(program, "squareCorner");
 		
+		uniformRadius = gl.getUniformLocation(program, "radius");
 		uniformColor = gl.getUniformLocation(program, "pColor");
 		uniformPM = gl.getUniformLocation(program, "uPMatrix");
+		uniformPos = gl.getUniformLocation(program, "playerPosition");
 		uniformZ = gl.getUniformLocation(program, "zPos");
-	
-	// set up constant data
-		data[2] = -1.0; data[3] = -1.0;
-		data[6] = -1.0; data[7] = 1.0;
-		data[10] = 1.0; data[11] = -1.0;
-		data[14] = 1.0; data[15] = 1.0;
 	
 	// set up tail renderer
 	TailRenderer.init(_gl);
-}
-
-function setUpBuffer(player: AbstractPlayer) {
-	let x: number = player.Position.getX();
-	let y: number = player.Position.getY();
-
-	data[0] = x - RADIUS; data[1] = y - RADIUS;
-	data[4] = x - RADIUS; data[5] = y + RADIUS;
-	data[8] = x + RADIUS; data[9] = y - RADIUS;
-	data[12] = x + RADIUS; data[13] = y + RADIUS;
-
-	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-	gl.bufferData(gl.ARRAY_BUFFER, data, gl.STREAM_DRAW);
 }
 
 export function draw(transform: Matrix, player: AbstractPlayer) {
@@ -70,15 +63,12 @@ export function draw(transform: Matrix, player: AbstractPlayer) {
 	TailRenderer.draw(transform, player);
 
 	gl.useProgram(program);
-	
-	setUpBuffer(player);
-	
-	// needs to be done for every webgl program switch
-	gl.enableVertexAttribArray(vertexAttribPos);
-	gl.enableVertexAttribArray(vertexAttribCSQ);
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 
-	gl.vertexAttribPointer(vertexAttribPos, 2, gl.FLOAT, false, 4 * 4, 0);
-	gl.vertexAttribPointer(vertexAttribCSQ, 2, gl.FLOAT, false, 4 * 4, 2 * 4);
+	// needs to be done for every webgl program switch
+	gl.enableVertexAttribArray(vertexAttribSquare);
+
+	gl.vertexAttribPointer(vertexAttribSquare, 2, gl.FLOAT, false, 2 * 4, 0);
 	
 	//gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // normal blending
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // additive blending
@@ -91,6 +81,9 @@ export function draw(transform: Matrix, player: AbstractPlayer) {
 
 	transform.uniform(gl, uniformPM);
 	gl.uniform1f(uniformZ, player.Z);
+	gl.uniform1f(uniformRadius, RADIUS);
+	//player.setPositionUniform(gl, uniformPos);
+	gl.uniform2f(uniformPos, player.Position.getX(), player.Position.getY());
 	player.Color.setUniform(gl, uniformColor);
 
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // 2 triangles

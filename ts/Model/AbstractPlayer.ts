@@ -98,7 +98,6 @@ export default abstract class AbstractPlayer {
 	}
 
 	public abstract updateData(data: IPlayerData, time:number): void;
-
 }
 
 function shiftTailData(data: Float32Array | Float64Array): void {

@@ -1,5 +1,5 @@
 export default class Vector {
-	private data: Float64Array = new Float64Array(2);
+	private data: Float32Array = new Float32Array(2);
 
 	constructor(x:number = 0.0, y:number = 0.0) {
 		this.data[0] = x;

@@ -6,8 +6,9 @@ import * as PlayerRenderer from "./PlayerRenderer";
 
 //declare var WebGLDebugUtils;
 const glOptions = {
-	alpha: true,
+	alpha: false,
 	stencil: true,
+	depth: false,
 	//antialias: false
 };
 

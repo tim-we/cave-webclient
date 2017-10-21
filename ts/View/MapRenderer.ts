@@ -46,7 +46,8 @@ export function setModelMap(map:Map) {
 
 function updateBuffer() {
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-	gl.bufferData(gl.ARRAY_BUFFER, data.data, gl.STREAM_DRAW);
+	// TODO: STREAM_DRAW vs STATIC_DRAW
+	gl.bufferData(gl.ARRAY_BUFFER, data.data, gl.STATIC_DRAW);
 
 	bufferVersion = data.version;
 }
