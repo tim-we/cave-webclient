@@ -493,7 +493,7 @@ const ACCELERATION = new Vector_1.default(0.04, 0.0);
 var tmp = 0;
 class Player extends AbstractPlayer_1.default {
     constructor(data, index) {
-        super(data, 0);
+        super(data, 0.12);
         this.Force = false;
         this.Position.set(0, -0.5);
         this.Index = index;
@@ -702,7 +702,7 @@ class Map {
         let yDelta = yTop - yBottom;
         let rel = (p.getY() - yBottom) / yDelta;
         let left = this.data[offset] + rel * (this.data[offset + 4] - this.data[offset]);
-        let right = this.data[offset + 2] + rel * (this.data[offset + 6] - this.data[offset + 2]);
+        let right = this.data[offset + 2] + rel * (this.data[offset + 10] - this.data[offset + 2]);
         return left <= p.getX() && p.getX() <= right;
     }
 }

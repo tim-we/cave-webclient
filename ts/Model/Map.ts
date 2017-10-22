@@ -117,8 +117,8 @@ export default class Map {
 		while (n < N) {
 			let offset: number = i * SEGMENT_SIZE;
 
-			yBottom = this.data[offset + 1];
-			yTop	= this.data[offset + 5];
+			yBottom = this.data[offset + 1]; // (bottom-left y)
+			yTop	= this.data[offset + 5]; // (top-left y)
 
 			if (yBottom <= p.getY() && p.getY() <= yTop) {
 				this.insideCheckIndex = i;
@@ -137,18 +137,15 @@ export default class Map {
 	private isInsideSegment(index: number, p: Vector): boolean {
 		let offset: number = index * SEGMENT_SIZE;
 
-		let yBottom: number = this.data[offset + 1];
-		let yTop: number	= this.data[offset + 5];
+		let yBottom: number = this.data[offset + 1]; // (bottom-left y)
+		let yTop: number	= this.data[offset + 5]; // (top-left y)
 		let yDelta: number = yTop - yBottom;
 		
 		let rel: number = (p.getY() - yBottom) / yDelta;
 
-		console.assert(0 <= rel && rel <= 1, `unexpected value ${rel}`);
-		console.assert(yDelta > 0);
-
 		// current x left and x right on the current y line
 		let left: number = this.data[offset] + rel * (this.data[offset + 4] - this.data[offset]);
-		let right: number = this.data[offset + 2] + rel * (this.data[offset + 6] - this.data[offset + 2]);
+		let right: number = this.data[offset + 2] + rel * (this.data[offset + 10] - this.data[offset + 2]);
 
 		let x: number = p.getX();
 		return left <= x && x <= right;

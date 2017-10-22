@@ -829,10 +829,8 @@ class Map {
         let yTop = this.data[offset + 5];
         let yDelta = yTop - yBottom;
         let rel = (p.getY() - yBottom) / yDelta;
-        console.assert(0 <= rel && rel <= 1, `unexpected value ${rel}`);
-        console.assert(yDelta > 0);
         let left = this.data[offset] + rel * (this.data[offset + 4] - this.data[offset]);
-        let right = this.data[offset + 2] + rel * (this.data[offset + 6] - this.data[offset + 2]);
+        let right = this.data[offset + 2] + rel * (this.data[offset + 10] - this.data[offset + 2]);
         let x = p.getX();
         return left <= x && x <= right;
     }
