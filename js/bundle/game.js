@@ -447,12 +447,12 @@ class Model {
     }
     updateState(data) {
         console.assert(data.time >= this.NextTime);
-        this.TimeDelta = Math.max(32, data.time - this.Time);
+        this.TimeDelta = Math.max(0.0333, data.time - this.Time);
         this.NextTime = data.time;
         this.OnlinePlayers.forEach((p, i) => {
             p.updateData(data.pdata[i], this.TimeDelta);
         });
-        this.Camera.setRotation(data.rotation, this.TimeDelta / 1000);
+        this.Camera.setRotation(data.rotation, this.TimeDelta);
         if (data.speed !== this.Speed) {
         }
     }

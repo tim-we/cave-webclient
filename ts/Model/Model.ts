@@ -13,9 +13,9 @@ import {
 
 export default class Model {
 
-	public Time: number; // current model time
+	public Time: number; // current model time (in seconds)
 	private NextTime: number; // time from the latest server update
-	private TimeDelta: number; // required fr smooth model updates
+	private TimeDelta: number; // required for smooth model updates
 	private LastUpdate: number; // last time the update() method was called (local)
 
 	public OnlinePlayers: OnlinePlayer[];
@@ -79,14 +79,14 @@ export default class Model {
 	private updateState(data: IServerGameStateUpdate) {
 		console.assert(data.time >= this.NextTime);
 		
-		this.TimeDelta = Math.max(32, data.time - this.Time); // 2 frames to catch up
+		this.TimeDelta = Math.max(0.0333, data.time - this.Time); // 2 frames to catch up
 		this.NextTime = data.time;
 
 		this.OnlinePlayers.forEach((p:OnlinePlayer, i:number) => {
 			p.updateData(data.pdata[i], this.TimeDelta);
 		});
 
-		this.Camera.setRotation(data.rotation, this.TimeDelta / 1000);
+		this.Camera.setRotation(data.rotation, this.TimeDelta);
 
 		if(data.speed !== this.Speed) {
 			// TODO: update velocity for all players
