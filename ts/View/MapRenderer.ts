@@ -4,6 +4,7 @@ import { createProgramFromSource } from "./ShaderTools";
 import Color from "./Color";
 import Map from "../Model/Map";
 import Matrix from "../Model/Matrix";
+import { layerGetZ } from "./Tools";
 
 const NUM_LAYERS:number = 6;
 
@@ -83,12 +84,11 @@ export function draw(proj:Matrix): void {
 }
 
 function drawLayer(index: number, proj: Matrix): void {
-	let z: number = 0.04 + 0.08 + index * 0.06;
 	// only draw (&increment stencil) where stencil value is `index`
 	gl.stencilFunc(gl.LEQUAL, index, 0xFF);
 
 	// set z position
-	gl.uniform1f(uniformZ, z);
+	gl.uniform1f(uniformZ, layerGetZ(index));
 
 	// send projection matrix to GPU
 	proj.uniform(gl, uniformPM);

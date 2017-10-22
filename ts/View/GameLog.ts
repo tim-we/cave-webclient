@@ -4,13 +4,12 @@ window.addEventListener("load", () => {
 	logDOMRef = document.getElementById("log");
 });
 
-const DURATION: number = 4200; //ms
-
 class LogEntry {
 	private time: number = Date.now();
 	private ref: HTMLParagraphElement;
+	private duration: number;
 
-	constructor(text:string, classes?:string[]) {
+	constructor(text: string, classes?: string[], duration: number = 4200) {
 		let p: HTMLParagraphElement = document.createElement("p");
 		p.innerText = text;
 
@@ -19,12 +18,16 @@ class LogEntry {
 		}
 
 		this.ref = p;
+		this.duration = duration;
+		if (visibleLogs.length > 0) {
+			this.time = Math.max(Date.now(), visibleLogs[visibleLogs.length-1].time + 250);
+		}
 
 		logDOMRef.appendChild(p);
 	}
 
 	public hasExpired(): boolean {
-		return (Date.now() - this.time) > DURATION;
+		return (Date.now() - this.time) > this.duration;
 	}
 
 	public remove(): void {
@@ -43,7 +46,7 @@ export function log(text:string, log2console:boolean = false): void {
 export function error(text:string, log2console:boolean = true): void {
 	if (log2console) { console.error(text); }
 
-	visibleLogs.push(new LogEntry(text, ["error"]));
+	visibleLogs.push(new LogEntry(text, ["error"], 8000));
 }
 
 setInterval(() => {
@@ -51,4 +54,4 @@ setInterval(() => {
 	while (visibleLogs.length > 0 && visibleLogs[0].hasExpired()) {
 		visibleLogs.shift().remove();
 	}
-}, 500);
+}, 250);

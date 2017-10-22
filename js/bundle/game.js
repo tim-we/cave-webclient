@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 5);
+/******/ 	return __webpack_require__(__webpack_require__.s = 6);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -138,18 +138,18 @@ exports.default = Vector;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Vector_1 = __webpack_require__(0);
-const Color_1 = __webpack_require__(4);
-exports.TAILLENGTH = 80;
+const Color_1 = __webpack_require__(5);
+exports.TAILLENGTH = 100;
 const TAILNODESIZE = 2 * (2 + 1);
 const TAILWIDTH = 0.005;
 const STARTSPEED = new Vector_1.default(0.0, 0.75);
 var tmp = new Vector_1.default();
 class AbstractPlayer {
-    constructor(data, zPos) {
+    constructor(data, layer) {
         this.Position = new Vector_1.default(0.0, 0.0);
         this.Velocity = STARTSPEED.clone();
         this.VelOrthoDir = new Vector_1.default(0.0, 0.0);
-        this.Z = zPos;
+        this.Layer = layer;
         this.Alive = true;
         this.Color = Color_1.default.create(data.color);
         this.Tail = new Float32Array(exports.TAILLENGTH * TAILNODESIZE);
@@ -218,9 +218,8 @@ var logDOMRef = null;
 window.addEventListener("load", () => {
     logDOMRef = document.getElementById("log");
 });
-const DURATION = 4200;
 class LogEntry {
-    constructor(text, classes) {
+    constructor(text, classes, duration = 4200) {
         this.time = Date.now();
         let p = document.createElement("p");
         p.innerText = text;
@@ -228,10 +227,14 @@ class LogEntry {
             classes.forEach(c => p.classList.add(c));
         }
         this.ref = p;
+        this.duration = duration;
+        if (visibleLogs.length > 0) {
+            this.time = Math.max(Date.now(), visibleLogs[visibleLogs.length - 1].time + 250);
+        }
         logDOMRef.appendChild(p);
     }
     hasExpired() {
-        return (Date.now() - this.time) > DURATION;
+        return (Date.now() - this.time) > this.duration;
     }
     remove() {
         this.ref.remove();
@@ -249,14 +252,14 @@ function error(text, log2console = true) {
     if (log2console) {
         console.error(text);
     }
-    visibleLogs.push(new LogEntry(text, ["error"]));
+    visibleLogs.push(new LogEntry(text, ["error"], 8000));
 }
 exports.error = error;
 setInterval(() => {
     while (visibleLogs.length > 0 && visibleLogs[0].hasExpired()) {
         visibleLogs.shift().remove();
     }
-}, 500);
+}, 250);
 
 
 /***/ }),
@@ -308,6 +311,19 @@ exports.createProgramFromSource = createProgramFromSource;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+function layerGetZ(index) {
+    return 0.12 + index * 0.06;
+}
+exports.layerGetZ = layerGetZ;
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 class Color {
     constructor(r, g, b, a = 1.0) {
         this.red = r;
@@ -336,17 +352,17 @@ exports.default = Color;
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Model_1 = __webpack_require__(6);
-const View = __webpack_require__(11);
-const UserInput = __webpack_require__(24);
+const Model_1 = __webpack_require__(7);
+const View = __webpack_require__(12);
+const UserInput = __webpack_require__(25);
 const GameLog = __webpack_require__(2);
-const Server_1 = __webpack_require__(25);
+const Server_1 = __webpack_require__(26);
 var connection = new Server_1.default();
 var model = null;
 window.addEventListener("load", () => {
@@ -371,7 +387,7 @@ window.addEventListener("load", () => {
 });
 function mainloop() {
     if (model) {
-        model.Player.Force = UserInput.isPressed();
+        model.Player.setForce(UserInput.isPressed());
         if (model.aliveCount() > 0) {
             model.update();
         }
@@ -385,22 +401,19 @@ function serverUpdateHandler(data) {
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Player_1 = __webpack_require__(7);
-const OnlinePlayer_1 = __webpack_require__(8);
-const Camera_1 = __webpack_require__(9);
-const Map_1 = __webpack_require__(10);
+const Player_1 = __webpack_require__(8);
+const OnlinePlayer_1 = __webpack_require__(9);
+const Camera_1 = __webpack_require__(10);
+const Map_1 = __webpack_require__(11);
 class Model {
     constructor(data) {
-        this.Camera = new Camera_1.default();
         this.Speed = 0.42;
-        this.Rotation = 0 * Math.PI;
-        this.RotationDelta = 0.0;
         let n = data.playerInitData.length;
         console.assert(n > 0);
         console.assert(data.time < 0, "unexpected: data.time = " + data.time);
@@ -408,8 +421,8 @@ class Model {
         this.NextTime = data.time;
         this.TimeDelta = 0.0;
         this.LastUpdate = performance.now();
+        this.Camera = new Camera_1.default(0, -0.5, data.rotation);
         this.OnlinePlayers = new Array(n - 1);
-        let z = 0.2;
         let j = 0;
         this.Player = new Player_1.default(data.playerInitData[data.index], 0.05);
         for (let i = 0; i < n - 1; i++) {
@@ -417,8 +430,7 @@ class Model {
                 j++;
             }
             else {
-                this.OnlinePlayers[j] = new OnlinePlayer_1.default(data.playerInitData[j], z);
-                z += 0.1;
+                this.OnlinePlayers[j] = new OnlinePlayer_1.default(data.playerInitData[j], j + 1);
                 j++;
             }
         }
@@ -440,6 +452,7 @@ class Model {
         this.OnlinePlayers.forEach((p, i) => {
             p.updateData(data.pdata[i], this.TimeDelta);
         });
+        this.Camera.setRotation(data.rotation, this.TimeDelta / 1000);
         if (data.speed !== this.Speed) {
         }
     }
@@ -455,14 +468,12 @@ class Model {
                     this.Player.update(t);
                 }
                 else {
-                    this.Player.move(-0.75 * t);
                     this.Player.die();
                 }
             }
             this.OnlinePlayers.forEach(p => {
                 p.move(t);
             });
-            this.Rotation += t * this.RotationDelta;
         }
         this.Camera.update(this, t);
     }
@@ -480,7 +491,7 @@ exports.default = Model;
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -489,17 +500,30 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const AbstractPlayer_1 = __webpack_require__(1);
 const Vector_1 = __webpack_require__(0);
 const GameLog = __webpack_require__(2);
-const ACCELERATION = new Vector_1.default(0.04, 0.0);
+const ACCELERATION = new Vector_1.default(0.03, 0.0);
 var tmp = 0;
 class Player extends AbstractPlayer_1.default {
     constructor(data, index) {
         super(data, 0);
         this.Force = false;
+        this.FirstInputReceived = false;
         this.Position.set(0, -0.5);
         this.Index = index;
     }
+    setForce(value) {
+        if (!this.FirstInputReceived && value) {
+            this.FirstInputReceived = true;
+        }
+        this.Force = value;
+    }
+    getForce() { return this.Force; }
     update(t) {
-        this.updateXVelocity(this.Force ? ACCELERATION.getX() : -ACCELERATION.getX());
+        if (this.FirstInputReceived) {
+            this.updateXVelocity(this.Force ? -ACCELERATION.getX() : ACCELERATION.getX());
+        }
+        else {
+            this.updateXVelocity(0);
+        }
     }
     updateData(data, time) {
         throw new Error("Method not implemented.");
@@ -513,7 +537,7 @@ exports.default = Player;
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -540,7 +564,7 @@ exports.default = OnlinePlayer;
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -548,20 +572,29 @@ exports.default = OnlinePlayer;
 Object.defineProperty(exports, "__esModule", { value: true });
 const Vector_1 = __webpack_require__(0);
 const SPEED = 4.2;
-const Offset = new Vector_1.default(0.0, 0.8);
-let tmp = new Vector_1.default();
+const Offset = new Vector_1.default(0.0, 1.0);
+const FULLCIRCLE = 2.0 * Math.PI;
+let tmp1 = new Vector_1.default();
+let tmp2 = Object.seal(new Array(0, 0));
+let tmp3 = Object.seal(new Array(0, 0));
 class Camera {
-    constructor() {
-        this.Position = new Vector_1.default();
+    constructor(x, y, rotation = 0) {
         this.Velocity = new Vector_1.default();
+        this.RotationVelocity = 0;
+        this.Position = new Vector_1.default(x, y);
+        this.Rotation = rotation;
     }
     update(model, t) {
         Vector_1.default.axpy(t, this.Velocity, this.Position);
+        this.Rotation += t * this.RotationVelocity;
+        if (this.Rotation <= 0.0) {
+            this.Rotation += FULLCIRCLE;
+        }
         if (model.Player.Alive) {
             this.setTarget(model.Player.Position);
         }
         else {
-            let target = tmp;
+            let target = tmp1;
             target.set(0, 0);
             let alive = 0;
             model.OnlinePlayers.forEach(p => {
@@ -579,19 +612,38 @@ class Camera {
             }
         }
     }
+    setRotation(alpha, time = 0) {
+        if (Math.abs(time) < 1e-12) {
+            this.Rotation = alpha;
+        }
+        else if (time > 0) {
+            let delta = alpha - this.Rotation;
+            let delta2 = alpha - FULLCIRCLE - this.Rotation;
+            if (Math.abs(delta2) < Math.abs(delta)) {
+                delta = delta2;
+            }
+            this.RotationVelocity = delta / time;
+        }
+        else {
+            this.RotationVelocity = 0;
+        }
+    }
     setTarget(target) {
-        if (target !== tmp) {
-            tmp.copyFrom(target);
-            target = tmp;
+        if (target !== tmp1) {
+            tmp1.copyFrom(target);
+            target = tmp1;
         }
         Vector_1.default.axpy(1, Offset, target);
         Vector_1.default.axpy2(-1, this.Position, target, this.Velocity);
         limitSpeed(this.Velocity);
     }
-    setViewMatrix(view, model) {
-        view.makeZRotation(model.Rotation);
-        view.setEntry(0, 3, -this.Position.getX());
-        view.setEntry(1, 3, -this.Position.getY());
+    setViewMatrix(view) {
+        view.makeZRotation(this.Rotation);
+        tmp2[0] = -this.Position.getX();
+        tmp2[1] = -this.Position.getY();
+        view.xvector(tmp2, tmp3);
+        view.setEntry(0, 3, tmp3[0]);
+        view.setEntry(1, 3, tmp3[1]);
     }
 }
 exports.default = Camera;
@@ -604,7 +656,7 @@ function limitSpeed(vel) {
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -701,23 +753,26 @@ class Map {
         let yTop = this.data[offset + 5];
         let yDelta = yTop - yBottom;
         let rel = (p.getY() - yBottom) / yDelta;
+        console.assert(0 <= rel && rel <= 1, `unexpected value ${rel}`);
+        console.assert(yDelta > 0);
         let left = this.data[offset] + rel * (this.data[offset + 4] - this.data[offset]);
         let right = this.data[offset + 2] + rel * (this.data[offset + 6] - this.data[offset + 2]);
-        return left <= p.getX() && p.getX() <= right;
+        let x = p.getX();
+        return left <= x && x <= right;
     }
 }
 exports.default = Map;
 
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Renderer = __webpack_require__(12);
-const FPS = __webpack_require__(23);
+const Renderer = __webpack_require__(13);
+const FPS = __webpack_require__(24);
 var canvas;
 var drawAgain = false;
 var afterDraw;
@@ -761,15 +816,15 @@ function draw() {
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Matrix_1 = __webpack_require__(13);
-const MapRenderer = __webpack_require__(14);
-const PlayerRenderer = __webpack_require__(17);
+const Matrix_1 = __webpack_require__(14);
+const MapRenderer = __webpack_require__(15);
+const PlayerRenderer = __webpack_require__(18);
 const glOptions = {
     alpha: false,
     stencil: true,
@@ -832,13 +887,13 @@ function resize(width, height) {
 }
 exports.resize = resize;
 function updateTransformation() {
-    model.Camera.setViewMatrix(viewMatrix, model);
+    model.Camera.setViewMatrix(viewMatrix);
     Matrix_1.default.multiply(projMatrix, viewMatrix, transformMatrix);
 }
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -925,6 +980,18 @@ class Matrix {
             }
         }
     }
+    xvector(x, res = new Array(x.length)) {
+        let sum, i, j;
+        let n = Math.min(x.length, 4);
+        for (i = 0; i < n; i++) {
+            sum = 0.0;
+            for (j = 0; j < n; j++) {
+                sum += this.getEntry(i, j) * x[j];
+            }
+            res[i] = sum;
+        }
+        return res;
+    }
     uniform(gl, location) {
         gl.uniformMatrix4fv(location, false, this.data);
     }
@@ -933,14 +1000,15 @@ exports.default = Matrix;
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(3);
-const Color_1 = __webpack_require__(4);
+const Color_1 = __webpack_require__(5);
+const Tools_1 = __webpack_require__(4);
 const NUM_LAYERS = 6;
 var data = null;
 var bufferVersion = -1;
@@ -954,7 +1022,7 @@ var bgColor = new Color_1.default(0.0, 0.6, 0.05);
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(15), __webpack_require__(16));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(16), __webpack_require__(17));
     vertexPosAttrib = gl.getAttribLocation(program, "vPosition");
     uniformPM = gl.getUniformLocation(program, "uPMatrix");
     uniformZ = gl.getUniformLocation(program, "zPos");
@@ -993,35 +1061,35 @@ function draw(proj) {
 }
 exports.draw = draw;
 function drawLayer(index, proj) {
-    let z = 0.04 + 0.08 + index * 0.06;
     gl.stencilFunc(gl.LEQUAL, index, 0xFF);
-    gl.uniform1f(uniformZ, z);
+    gl.uniform1f(uniformZ, Tools_1.layerGetZ(index));
     proj.uniform(gl, uniformPM);
     gl.drawArrays(gl.TRIANGLES, 0, 3 * data.numTriangles());
 }
 
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\n\r\nuniform float zPos;\r\n\r\n//varying vec4 color;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n}"
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\n//varying vec4 color;\r\n\r\nvoid main(void) {\r\n\t//gl_FragColor = color;\r\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, 0.55); // blue\r\n}"
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(3);
-const TailRenderer = __webpack_require__(18);
+const TailRenderer = __webpack_require__(19);
+const Tools_1 = __webpack_require__(4);
 const RADIUS = 0.05;
 var gl = null;
 var buffer = null;
@@ -1046,7 +1114,7 @@ function init(_gl) {
     data[6] = 1.0;
     data[7] = 1.0;
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(21), __webpack_require__(22));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(22), __webpack_require__(23));
     vertexAttribSquare = gl.getAttribLocation(program, "squareCorner");
     uniformRadius = gl.getUniformLocation(program, "radius");
     uniformColor = gl.getUniformLocation(program, "pColor");
@@ -1067,7 +1135,7 @@ function draw(transform, player) {
     gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
     gl.stencilFunc(gl.LESS, 0, 0xFF);
     transform.uniform(gl, uniformPM);
-    gl.uniform1f(uniformZ, player.Z);
+    gl.uniform1f(uniformZ, Tools_1.layerGetZ(player.Layer));
     gl.uniform1f(uniformRadius, RADIUS);
     gl.uniform2f(uniformPos, player.Position.getX(), player.Position.getY());
     player.Color.setUniform(gl, uniformColor);
@@ -1078,7 +1146,7 @@ exports.draw = draw;
 
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1086,6 +1154,7 @@ exports.draw = draw;
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(3);
 const AbstractPlayer_1 = __webpack_require__(1);
+const Tools_1 = __webpack_require__(4);
 var gl = null;
 var buffer = null;
 var program = null;
@@ -1097,7 +1166,7 @@ var uniformZ = null;
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(19), __webpack_require__(20));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(20), __webpack_require__(21));
     vertexAttribPos = gl.getAttribLocation(program, "vPosition");
     vertexAttribPow = gl.getAttribLocation(program, "vIntensity");
     uniformColor = gl.getUniformLocation(program, "pColor");
@@ -1120,7 +1189,7 @@ function draw(transform, player) {
     gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
     gl.stencilFunc(gl.LESS, 0, 0xFF);
     transform.uniform(gl, uniformPM);
-    gl.uniform1f(uniformZ, player.Z);
+    gl.uniform1f(uniformZ, Tools_1.layerGetZ(player.Layer));
     player.Color.setUniform(gl, uniformColor);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, AbstractPlayer_1.default.getTailVertexCount());
 }
@@ -1128,31 +1197,31 @@ exports.draw = draw;
 
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\nattribute float vIntensity;\r\n\r\nuniform float zPos;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvarying mediump float opacity;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n\r\n\topacity = vIntensity;\r\n}"
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying mediump float opacity;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = vec4(pColor.rgb, opacity);\r\n}"
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 squareCorner;\r\n\r\nuniform vec2 playerPosition;\r\nuniform float zPos;\r\nuniform float radius;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\n// interpolate for the fragment-shader\r\nvarying vec2 cPos;\r\n\r\nvoid main(void) {\r\n\tfloat x = playerPosition.x + radius * squareCorner.x;\r\n\tfloat y = playerPosition.y + radius * squareCorner.y;\r\n\r\n\tgl_Position = uPMatrix * vec4(x, y, zPos, 1.0);\r\n\r\n\tcPos = squareCorner;\r\n}"
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying vec2 cPos;\r\n\r\nconst vec4 CENTER  = vec4(1.0, 1.0, 1.0, 1.0);\r\nconst vec4 OUTSIDE = vec4(0.0, 0.0, 0.0, 0.0);\r\n\r\nvoid main(void) {\r\n\t\r\n\tfloat d = dot(cPos,cPos);\r\n\r\n\tif(d < 1.0) { // inside\r\n\t\tfloat r = sqrt(d);\r\n\r\n\t\tif(r <= 0.5) {\r\n\t\t\tgl_FragColor = mix(CENTER, pColor, 2.0 * r);\r\n\t\t} else {\r\n\t\t\t//gl_FragColor = mix(pColor, OUTSIDE, 2.0 * r - 1.0);\r\n\t\t\tgl_FragColor = vec4(pColor.rgb, 2.0 - 2.0 * r);\r\n\t\t}\r\n\t} else { // outside\r\n\t\tgl_FragColor = OUTSIDE;\r\n\t}\r\n}"
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1192,7 +1261,7 @@ function updateDisplay() {
 
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1275,7 +1344,7 @@ document.addEventListener("keyup", function (e) {
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1381,7 +1450,7 @@ class Server {
             time: 0,
             pos: { x: 0, y: 0 },
             vel: { x: 0, y: 0 },
-            pow: model.Player.Force
+            pow: model.Player.getForce()
         };
     }
     setUpdateListener(listener) {

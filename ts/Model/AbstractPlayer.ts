@@ -6,7 +6,7 @@ import {
 	IPlayerData
 } from "../Controller/ICommunication";
 
-export const TAILLENGTH = 80;
+export const TAILLENGTH = 100;
 const TAILNODESIZE = 2 * (2 + 1);
 const TAILWIDTH = 0.005;
 const STARTSPEED: Vector = new Vector(0.0, 0.75);
@@ -21,7 +21,7 @@ export default abstract class AbstractPlayer {
 	private Velocity:Vector;
 	private VelOrthoDir:Vector;
 
-	public Z: number;
+	public Layer: number; // integer >= 0
 
 	public Alive: boolean;
 
@@ -33,11 +33,11 @@ export default abstract class AbstractPlayer {
 		=> 2 * (2 + 1) = 6 floats per "tail point"
 	*/
 
-	constructor(data:IPlayerInitData, zPos:number) {
+	constructor(data:IPlayerInitData, layer:number) {
 		this.Position = new Vector(0.0, 0.0);
 		this.Velocity = STARTSPEED.clone();
 		this.VelOrthoDir = new Vector(0.0, 0.0);
-		this.Z = zPos;
+		this.Layer = layer;
 		this.Alive = true;
 
 		this.Color = Color.create(data.color);

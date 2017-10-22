@@ -6,14 +6,16 @@ import Color from "../View/Color";
 import { IPlayerInitData, IPlayerData } from "../Controller/ICommunication";
 import * as GameLog from "../View/GameLog";
 
-const ACCELERATION: Vector = new Vector(0.04, 0.0);
+const ACCELERATION: Vector = new Vector(0.03, 0.0);
 
 var tmp: number = 0;
 
 export default class Player extends AbstractPlayer {
 	public Index: number; // position in the server player array
 
-	public Force: boolean = false;
+	private Force: boolean = false;
+
+	private FirstInputReceived: boolean = false;
 
 	constructor(data:IPlayerInitData, index: number) {
 		super(data, 0);
@@ -23,11 +25,23 @@ export default class Player extends AbstractPlayer {
 		this.Index = index;
 	}
 
+	public setForce(value: boolean): void {
+		if (!this.FirstInputReceived && value) { this.FirstInputReceived = true; }
+		this.Force = value;
+	}
+
+	public getForce(): boolean { return this.Force; }
+
 	public update(t:number):void {
 
-		this.updateXVelocity(
-			this.Force ? ACCELERATION.getX() : -ACCELERATION.getX()
-		);
+		if (this.FirstInputReceived) {
+			this.updateXVelocity(
+				this.Force ? -ACCELERATION.getX() : ACCELERATION.getX()
+			);
+		} else {
+			// straight line before first input
+			this.updateXVelocity(0);
+		}
 	}
 
 	public updateData(data: IPlayerData, time:number): void {

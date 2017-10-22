@@ -69,7 +69,7 @@ export default class Server implements Connection {
 					} else {
 						if (resolved === false && data.type === "lobby") {
 							resolved = true;
-							
+
 							if ((<IServerLobbyUpdate>data).msg) {
 								GameLog.log((<IServerLobbyUpdate>data).msg);
 							}
@@ -131,7 +131,7 @@ export default class Server implements Connection {
 			time: 0, // TODO: model time
 			pos: { x: 0, y: 0},
 			vel: { x: 0, y: 0},
-			pow: model.Player.Force
+			pow: model.Player.getForce()
 		};
 	}
 

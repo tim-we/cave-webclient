@@ -4,6 +4,7 @@ import { createProgramFromSource } from "./ShaderTools";
 import Color from "./Color";
 import AbstractPlayer from "../Model/AbstractPlayer";
 import Matrix from "../Model/Matrix";
+import { layerGetZ } from "./Tools";
 
 var gl: WebGLRenderingContext = null;
 var buffer: WebGLBuffer = null;
@@ -63,7 +64,7 @@ export function draw(transform:Matrix, player:AbstractPlayer): void {
 	gl.stencilFunc(gl.LESS, 0, 0xFF);
 
 	transform.uniform(gl, uniformPM);
-	gl.uniform1f(uniformZ, player.Z);
+	gl.uniform1f(uniformZ, layerGetZ(player.Layer));
 	player.Color.setUniform(gl, uniformColor);
 
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, AbstractPlayer.getTailVertexCount());

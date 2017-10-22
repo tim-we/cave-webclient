@@ -143,10 +143,15 @@ export default class Map {
 		
 		let rel: number = (p.getY() - yBottom) / yDelta;
 
+		console.assert(0 <= rel && rel <= 1, `unexpected value ${rel}`);
+		console.assert(yDelta > 0);
+
+		// current x left and x right on the current y line
 		let left: number = this.data[offset] + rel * (this.data[offset + 4] - this.data[offset]);
 		let right: number = this.data[offset + 2] + rel * (this.data[offset + 6] - this.data[offset + 2]);
 
-		return left <= p.getX() && p.getX() <= right;
+		let x: number = p.getX();
+		return left <= x && x <= right;
 	}
 
 }

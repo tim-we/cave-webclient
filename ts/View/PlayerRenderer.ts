@@ -5,6 +5,7 @@ import Color from "./Color";
 import AbstractPlayer from "../Model/AbstractPlayer";
 import Matrix from "../Model/Matrix";
 import * as TailRenderer from "./TailRenderer";
+import { layerGetZ } from "./Tools";
 
 const RADIUS: number = 0.05;
 
@@ -80,7 +81,7 @@ export function draw(transform: Matrix, player: AbstractPlayer) {
 	gl.stencilFunc(gl.LESS, 0, 0xFF);
 
 	transform.uniform(gl, uniformPM);
-	gl.uniform1f(uniformZ, player.Z);
+	gl.uniform1f(uniformZ, layerGetZ(player.Layer));
 	gl.uniform1f(uniformRadius, RADIUS);
 	//player.setPositionUniform(gl, uniformPos);
 	gl.uniform2f(uniformPos, player.Position.getX(), player.Position.getY());

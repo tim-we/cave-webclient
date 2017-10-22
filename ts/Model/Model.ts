@@ -22,14 +22,11 @@ export default class Model {
 
 	public Player: Player;
 
-	public Camera: Camera = new Camera();
+	public Camera: Camera;
 
 	public Map: Map;
 
 	private Speed:number = 0.42; // main axis velocity
-
-	public Rotation: number = 0 * Math.PI;
-	private RotationDelta: number = 0.0;
 
 	constructor(data:IServerGameStart) {
 		let n: number = data.playerInitData.length; // number of players
@@ -44,9 +41,11 @@ export default class Model {
 		this.TimeDelta = 0.0;
 		this.LastUpdate = performance.now();
 
+		// create camera
+		this.Camera = new Camera(0, -0.5, data.rotation);
+
 		// create player objects
 		this.OnlinePlayers = new Array(n-1);
-		let z: number = 0.2;
 		let j: number = 0;
 
 		this.Player = new Player(data.playerInitData[data.index], 0.05);
@@ -55,8 +54,7 @@ export default class Model {
 			
 			if (data.index === i) { j++; }
 			else {
-				this.OnlinePlayers[j] = new OnlinePlayer(data.playerInitData[j], z);
-				z += 0.1;
+				this.OnlinePlayers[j] = new OnlinePlayer(data.playerInitData[j], j+1);
 				j++;
 			}
 		}
@@ -88,7 +86,7 @@ export default class Model {
 			p.updateData(data.pdata[i], this.TimeDelta);
 		});
 
-		//this.RotationDelta = 1000 * (data.rotation - this.Rotation) / this.TimeDelta;
+		this.Camera.setRotation(data.rotation, this.TimeDelta / 1000);
 
 		if(data.speed !== this.Speed) {
 			// TODO: update velocity for all players
@@ -118,7 +116,7 @@ export default class Model {
 					// update velocity
 					this.Player.update(t);
 				} else {
-					this.Player.move(-0.75 * t);
+					//this.Player.move(-0.5 * t);
 					this.Player.die();
 				}
 			}
@@ -127,9 +125,6 @@ export default class Model {
 			this.OnlinePlayers.forEach(p => {
 				p.move(t);
 			});
-
-			// update rotation
-			this.Rotation += t * this.RotationDelta;
 		}
 
 		// update camera

@@ -44,6 +44,7 @@ export interface IServerGameStart extends IServerMessage {
 	index: number;
 	time: number;
 	mapInit: number[]; // length === 8 (4 2D points)
+	rotation: number;
 }
 
 export interface IServerGameStateUpdate extends IServerMessage {

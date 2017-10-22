@@ -48,7 +48,7 @@ window.addEventListener("load", () => {
 
 function mainloop() {
 	if (model) {
-		model.Player.Force = UserInput.isPressed();
+		model.Player.setForce(UserInput.isPressed());
 
 		if (model.aliveCount() > 0) {
 			model.update();

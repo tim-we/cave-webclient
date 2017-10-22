@@ -87,6 +87,6 @@ export function resize(width:number, height:number): void {
 
 function updateTransformation(): void {
 	// assume model != null
-	model.Camera.setViewMatrix(viewMatrix, model);
+	model.Camera.setViewMatrix(viewMatrix);
 	Matrix.multiply(projMatrix, viewMatrix, transformMatrix);
 }

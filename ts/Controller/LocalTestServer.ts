@@ -79,7 +79,8 @@ export default class LocalTestServer implements Connection {
 					playerInitData: [
 						{ name: "Bob", color: 0 }
 					],
-					mapInit: [ -.9, -1, .9, -1, -.9, .75, .9, .75 ]
+					mapInit: [-.9, -1, .9, -1, -.9, .75, .9, .75],
+					rotation: 1.5 * Math.PI
 				});
 
 				setTimeout(_this => { _this.sendMapUpdate(0); }, 0, this);

@@ -105,6 +105,26 @@ export default class Matrix {
 		}
 	}
 
+	// matrix vector multiplication
+	public xvector(x:number[], res:number[] = new Array(x.length)): number[] {
+		let sum: number, i: number, j: number;
+		let n: number = Math.min(x.length, 4);
+
+		// rows
+		for (i = 0; i < n; i++) {
+			sum = 0.0;
+
+			// columns
+			for (j = 0; j < n; j++) {
+				sum += this.getEntry(i, j) * x[j];
+			}
+
+			res[i] = sum;
+		}
+
+		return res;
+	}
+
 	public uniform(gl:WebGLRenderingContext, location:WebGLUniformLocation): void {
 		gl.uniformMatrix4fv(location, false, this.data);
 	}
