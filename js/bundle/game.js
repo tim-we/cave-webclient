@@ -312,7 +312,7 @@ exports.createProgramFromSource = createProgramFromSource;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 function layerGetZ(index) {
-    return 0.12 + index * 0.06;
+    return 0.12 + index * 0.05;
 }
 exports.layerGetZ = layerGetZ;
 
@@ -1032,7 +1032,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(3);
 const Color_1 = __webpack_require__(6);
 const Tools_1 = __webpack_require__(4);
-const NUM_LAYERS = 6;
+const NUM_LAYERS = 8;
 var data = null;
 var bufferVersion = -1;
 var gl = null;
@@ -1095,13 +1095,13 @@ function drawLayer(index, proj) {
 /* 17 */
 /***/ (function(module, exports) {
 
-module.exports = "attribute vec2 vPosition;\r\n\r\nuniform float zPos;\r\n\r\n//varying vec4 color;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n}"
+module.exports = "attribute vec2 vPosition;\r\n\r\nuniform float zPos;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n}"
 
 /***/ }),
 /* 18 */
 /***/ (function(module, exports) {
 
-module.exports = "precision mediump float;\r\n\r\n//varying vec4 color;\r\n\r\nvoid main(void) {\r\n\t//gl_FragColor = color;\r\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, 0.55); // blue\r\n}"
+module.exports = "precision mediump float;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, 0.50);\r\n}"
 
 /***/ }),
 /* 19 */

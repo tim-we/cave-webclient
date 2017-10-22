@@ -6,7 +6,7 @@ import Map from "../Model/Map";
 import Matrix from "../Model/Matrix";
 import { layerGetZ } from "./Tools";
 
-const NUM_LAYERS:number = 6;
+const NUM_LAYERS:number = 8;
 
 var data: Map = null;
 var bufferVersion: number = -1;
