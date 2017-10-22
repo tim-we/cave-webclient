@@ -1,4 +1,4 @@
-import { IServerMapUpdate } from "../Controller/ICommunication";
+import { IServerMapUpdate } from "../Protocol/ICommunication";
 import Vector from "./Vector";
 
 const N: number = 50; // number of segments

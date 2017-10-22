@@ -1,6 +1,6 @@
 import AbstractPlayer from "./AbstractPlayer";
 
-import { IPlayerInitData, IPlayerData } from "../Controller/ICommunication";
+import { IPlayerInitData, IPlayerData } from "../Protocol/ICommunication";
 
 import Vector from "./Vector";
 import Color from "../View/Color";

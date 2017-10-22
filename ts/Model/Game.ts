@@ -9,9 +9,9 @@ import {
 	IServerMapUpdate,
 	IServerGameStart,
 	IServerGameStateUpdate
-} from "../Controller/ICommunication";
+} from "../Protocol/ICommunication";
 
-export default class Model {
+export default class Game {
 
 	public Time: number; // current model time (in seconds)
 	private NextTime: number; // time from the latest server update

@@ -4,7 +4,7 @@ import Color from "../View/Color";
 import {
 	IPlayerInitData,
 	IPlayerData
-} from "../Controller/ICommunication";
+} from "../Protocol/ICommunication";
 
 export const TAILLENGTH = 100;
 const TAILNODESIZE = 2 * (2 + 1);

@@ -39,7 +39,7 @@ export function init(_gl:WebGLRenderingContext) {
 		uniformZ = gl.getUniformLocation(program, "zPos");
 }
 
-export function setModelMap(map:Map) {
+export function setMap(map:Map) {
 	data = map;
 	bufferVersion = -1;
 	updateBuffer();

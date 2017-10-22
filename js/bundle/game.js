@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ 	return __webpack_require__(__webpack_require__.s = 8);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -138,7 +138,7 @@ exports.default = Vector;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Vector_1 = __webpack_require__(0);
-const Color_1 = __webpack_require__(5);
+const Color_1 = __webpack_require__(6);
 exports.TAILLENGTH = 100;
 const TAILNODESIZE = 2 * (2 + 1);
 const TAILWIDTH = 0.005;
@@ -324,6 +324,28 @@ exports.layerGetZ = layerGetZ;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const Game_1 = __webpack_require__(9);
+const View = __webpack_require__(7);
+var game = null;
+function getGame() {
+    return game;
+}
+exports.getGame = getGame;
+function newGame(data) {
+    game = new Game_1.default(data);
+    View.notifyGameChanged();
+    return game;
+}
+exports.newGame = newGame;
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 class Color {
     constructor(r, g, b, a = 1.0) {
         this.red = r;
@@ -352,20 +374,73 @@ exports.default = Color;
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Game_1 = __webpack_require__(7);
-const View = __webpack_require__(12);
-const UserInput = __webpack_require__(25);
+const Model = __webpack_require__(5);
+const Renderer = __webpack_require__(14);
+const FPS = __webpack_require__(25);
+var canvas;
+var drawAgain = false;
+var afterDraw;
+function init(afterDrawHook) {
+    canvas = document.getElementById("game");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    afterDraw = afterDrawHook;
+    Renderer.init(canvas);
+    window.addEventListener("resize", function () {
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+        canvas.width = w;
+        canvas.height = h;
+        Renderer.resize(w, h);
+    });
+    FPS.enable();
+}
+exports.init = init;
+function notifyGameChanged() {
+    Renderer.setGame(Model.getGame());
+}
+exports.notifyGameChanged = notifyGameChanged;
+function startDrawLoop(drawLoop = true) {
+    drawAgain = drawLoop;
+    draw();
+}
+exports.startDrawLoop = startDrawLoop;
+function stopDrawLoop() {
+    drawAgain = false;
+}
+exports.stopDrawLoop = stopDrawLoop;
+function draw() {
+    Renderer.draw();
+    if (drawAgain) {
+        window.requestAnimationFrame(draw);
+    }
+    FPS.frame();
+    afterDraw();
+}
+
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Model = __webpack_require__(5);
+const View = __webpack_require__(7);
+const UserInput = __webpack_require__(26);
 const GameLog = __webpack_require__(2);
-const Server_1 = __webpack_require__(26);
+const Server_1 = __webpack_require__(27);
 var connection = new Server_1.default();
-var model = null;
 window.addEventListener("load", () => {
+    GameLog.log("Inititalizing view components...");
+    View.init(mainloop);
     GameLog.log("Connecting...");
     connection.connect("Ulysses")
         .then(() => {
@@ -377,8 +452,7 @@ window.addEventListener("load", () => {
         .then((data) => {
         connection.setUpdateListener(serverUpdateHandler);
         GameLog.log("Starting game!");
-        model = new Game_1.default(data);
-        View.init(model, mainloop);
+        Model.newGame(data);
         mainloop();
         View.startDrawLoop();
     }).catch((reason) => {
@@ -386,32 +460,34 @@ window.addEventListener("load", () => {
     });
 });
 function mainloop() {
-    if (model) {
-        model.Player.setForce(UserInput.isPressed());
-        if (model.aliveCount() > 0) {
-            model.update();
+    let game = Model.getGame();
+    if (game) {
+        game.Player.setForce(UserInput.isPressed());
+        if (game.aliveCount() > 0) {
+            game.update();
         }
     }
 }
 function serverUpdateHandler(data) {
-    if (model) {
-        model.updateData(data);
+    let game = Model.getGame();
+    if (game) {
+        game.updateData(data);
     }
 }
 
 
 /***/ }),
-/* 7 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Player_1 = __webpack_require__(8);
-const OnlinePlayer_1 = __webpack_require__(9);
-const Camera_1 = __webpack_require__(10);
-const Map_1 = __webpack_require__(11);
-class Model {
+const Player_1 = __webpack_require__(10);
+const OnlinePlayer_1 = __webpack_require__(11);
+const Camera_1 = __webpack_require__(12);
+const Map_1 = __webpack_require__(13);
+class Game {
     constructor(data) {
         this.Speed = 0.42;
         let n = data.playerInitData.length;
@@ -487,11 +563,11 @@ class Model {
         return n;
     }
 }
-exports.default = Model;
+exports.default = Game;
 
 
 /***/ }),
-/* 8 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -537,7 +613,7 @@ exports.default = Player;
 
 
 /***/ }),
-/* 9 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -564,7 +640,7 @@ exports.default = OnlinePlayer;
 
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -656,7 +732,7 @@ function limitSpeed(vel) {
 
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -765,73 +841,22 @@ exports.default = Map;
 
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Renderer = __webpack_require__(13);
-const FPS = __webpack_require__(24);
-var canvas;
-var drawAgain = false;
-var afterDraw;
-function init(model, afterDrawHook) {
-    canvas = document.getElementById("game");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    afterDraw = afterDrawHook;
-    Renderer.init(canvas);
-    Renderer.setModel(model);
-    window.addEventListener("resize", function () {
-        let w = window.innerWidth;
-        let h = window.innerHeight;
-        canvas.width = w;
-        canvas.height = h;
-        Renderer.resize(w, h);
-        if (!drawAgain) {
-            Renderer.draw();
-        }
-    });
-    FPS.enable();
-}
-exports.init = init;
-function startDrawLoop(drawLoop = true) {
-    drawAgain = drawLoop;
-    draw();
-}
-exports.startDrawLoop = startDrawLoop;
-function stopDrawLoop() {
-    drawAgain = false;
-}
-exports.stopDrawLoop = stopDrawLoop;
-function draw() {
-    Renderer.draw();
-    if (drawAgain) {
-        window.requestAnimationFrame(draw);
-    }
-    FPS.frame();
-    afterDraw();
-}
-
-
-/***/ }),
-/* 13 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const Matrix_1 = __webpack_require__(14);
-const MapRenderer = __webpack_require__(15);
-const PlayerRenderer = __webpack_require__(18);
+const Matrix_1 = __webpack_require__(15);
+const MapRenderer = __webpack_require__(16);
+const PlayerRenderer = __webpack_require__(19);
 const glOptions = {
     alpha: false,
     stencil: true,
     depth: false,
 };
 var gl = null;
-var model = null;
+var game = null;
 var projMatrix = new Matrix_1.default();
 var viewMatrix = new Matrix_1.default();
 var transformMatrix = new Matrix_1.default();
@@ -859,20 +884,20 @@ function init(canvas) {
     PlayerRenderer.init(gl);
 }
 exports.init = init;
-function setModel(m) {
-    model = m;
-    MapRenderer.setModelMap(model.Map);
+function setGame(g) {
+    game = g;
+    MapRenderer.setMap(game.Map);
 }
-exports.setModel = setModel;
+exports.setGame = setGame;
 function draw() {
-    if (model === null) {
+    if (game === null) {
         return;
     }
     updateTransformation();
     gl.clear(gl.STENCIL_BUFFER_BIT);
     MapRenderer.draw(transformMatrix);
-    model.OnlinePlayers.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
-    PlayerRenderer.draw(transformMatrix, model.Player);
+    game.OnlinePlayers.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
+    PlayerRenderer.draw(transformMatrix, game.Player);
 }
 exports.draw = draw;
 function resize(width, height) {
@@ -887,13 +912,13 @@ function resize(width, height) {
 }
 exports.resize = resize;
 function updateTransformation() {
-    model.Camera.setViewMatrix(viewMatrix);
+    game.Camera.setViewMatrix(viewMatrix);
     Matrix_1.default.multiply(projMatrix, viewMatrix, transformMatrix);
 }
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1000,14 +1025,14 @@ exports.default = Matrix;
 
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(3);
-const Color_1 = __webpack_require__(5);
+const Color_1 = __webpack_require__(6);
 const Tools_1 = __webpack_require__(4);
 const NUM_LAYERS = 6;
 var data = null;
@@ -1022,18 +1047,18 @@ var bgColor = new Color_1.default(0.0, 0.6, 0.05);
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(16), __webpack_require__(17));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(17), __webpack_require__(18));
     vertexPosAttrib = gl.getAttribLocation(program, "vPosition");
     uniformPM = gl.getUniformLocation(program, "uPMatrix");
     uniformZ = gl.getUniformLocation(program, "zPos");
 }
 exports.init = init;
-function setModelMap(map) {
+function setMap(map) {
     data = map;
     bufferVersion = -1;
     updateBuffer();
 }
-exports.setModelMap = setModelMap;
+exports.setMap = setMap;
 function updateBuffer() {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, data.data, gl.STATIC_DRAW);
@@ -1069,26 +1094,26 @@ function drawLayer(index, proj) {
 
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\n\r\nuniform float zPos;\r\n\r\n//varying vec4 color;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n}"
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\n//varying vec4 color;\r\n\r\nvoid main(void) {\r\n\t//gl_FragColor = color;\r\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, 0.55); // blue\r\n}"
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(3);
-const TailRenderer = __webpack_require__(19);
+const TailRenderer = __webpack_require__(20);
 const Tools_1 = __webpack_require__(4);
 const RADIUS = 0.05;
 var gl = null;
@@ -1114,7 +1139,7 @@ function init(_gl) {
     data[6] = 1.0;
     data[7] = 1.0;
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(22), __webpack_require__(23));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(23), __webpack_require__(24));
     vertexAttribSquare = gl.getAttribLocation(program, "squareCorner");
     uniformRadius = gl.getUniformLocation(program, "radius");
     uniformColor = gl.getUniformLocation(program, "pColor");
@@ -1146,7 +1171,7 @@ exports.draw = draw;
 
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1166,7 +1191,7 @@ var uniformZ = null;
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(20), __webpack_require__(21));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(21), __webpack_require__(22));
     vertexAttribPos = gl.getAttribLocation(program, "vPosition");
     vertexAttribPow = gl.getAttribLocation(program, "vIntensity");
     uniformColor = gl.getUniformLocation(program, "pColor");
@@ -1197,31 +1222,31 @@ exports.draw = draw;
 
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\nattribute float vIntensity;\r\n\r\nuniform float zPos;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvarying mediump float opacity;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n\r\n\topacity = vIntensity;\r\n}"
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying mediump float opacity;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = vec4(pColor.rgb, opacity);\r\n}"
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 squareCorner;\r\n\r\nuniform vec2 playerPosition;\r\nuniform float zPos;\r\nuniform float radius;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\n// interpolate for the fragment-shader\r\nvarying vec2 cPos;\r\n\r\nvoid main(void) {\r\n\tfloat x = playerPosition.x + radius * squareCorner.x;\r\n\tfloat y = playerPosition.y + radius * squareCorner.y;\r\n\r\n\tgl_Position = uPMatrix * vec4(x, y, zPos, 1.0);\r\n\r\n\tcPos = squareCorner;\r\n}"
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying vec2 cPos;\r\n\r\nconst vec4 CENTER  = vec4(1.0, 1.0, 1.0, 1.0);\r\nconst vec4 OUTSIDE = vec4(0.0, 0.0, 0.0, 0.0);\r\n\r\nvoid main(void) {\r\n\t\r\n\tfloat d = dot(cPos,cPos);\r\n\r\n\tif(d < 1.0) { // inside\r\n\t\tfloat r = sqrt(d);\r\n\r\n\t\tif(r <= 0.5) {\r\n\t\t\tgl_FragColor = mix(CENTER, pColor, 2.0 * r);\r\n\t\t} else {\r\n\t\t\t//gl_FragColor = mix(pColor, OUTSIDE, 2.0 * r - 1.0);\r\n\t\t\tgl_FragColor = vec4(pColor.rgb, 2.0 - 2.0 * r);\r\n\t\t}\r\n\t} else { // outside\r\n\t\tgl_FragColor = OUTSIDE;\r\n\t}\r\n}"
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1261,7 +1286,7 @@ function updateDisplay() {
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1344,7 +1369,7 @@ document.addEventListener("keyup", function (e) {
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

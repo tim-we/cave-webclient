@@ -4,7 +4,7 @@ import {
 	IServerGameStateUpdate,
 	IServerMapUpdate,
 	IServerLobbyUpdate
-} from "./ICommunication";
+} from "../Protocol/ICommunication";
 
 export type GameUpdateListener = (data: IServerGameStateUpdate | IServerMapUpdate) => void;
 

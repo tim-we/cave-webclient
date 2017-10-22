@@ -3,7 +3,7 @@ import AbstractPlayer from "./AbstractPlayer";
 import Vector from "./Vector";
 import Color from "../View/Color";
 
-import { IPlayerInitData, IPlayerData } from "../Controller/ICommunication";
+import { IPlayerInitData, IPlayerData } from "../Protocol/ICommunication";
 import * as GameLog from "../View/GameLog";
 
 const ACCELERATION: Vector = new Vector(0.03, 0.0);

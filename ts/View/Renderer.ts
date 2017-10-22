@@ -13,7 +13,7 @@ const glOptions = {
 };
 
 var gl: WebGLRenderingContext = null;
-var model: Game = null;
+var game: Game = null;
 
 var projMatrix: Matrix = new Matrix();
 var viewMatrix: Matrix = new Matrix();
@@ -52,13 +52,13 @@ export function init(canvas: HTMLCanvasElement):void {
 	PlayerRenderer.init(gl);
 }
 
-export function setModel(m: Game) {
-	model = m;
-	MapRenderer.setModelMap(model.Map);
+export function setGame(g: Game) {
+	game = g;
+	MapRenderer.setMap(game.Map);
 }
 
 export function draw() {
-	if (model === null) { return; }
+	if (game === null) { return; }
 	
 	updateTransformation();
 
@@ -67,8 +67,8 @@ export function draw() {
 
 	MapRenderer.draw(transformMatrix);
 	
-	model.OnlinePlayers.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
-	PlayerRenderer.draw(transformMatrix, model.Player);
+	game.OnlinePlayers.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
+	PlayerRenderer.draw(transformMatrix, game.Player);
 }
 
 export function resize(width:number, height:number): void {
@@ -87,6 +87,6 @@ export function resize(width:number, height:number): void {
 
 function updateTransformation(): void {
 	// assume model != null
-	model.Camera.setViewMatrix(viewMatrix);
+	game.Camera.setViewMatrix(viewMatrix);
 	Matrix.multiply(projMatrix, viewMatrix, transformMatrix);
 }

@@ -1,3 +1,4 @@
+import * as Model from "../Model/Model";
 import Game from "../Model/Game";
 import * as Renderer from "./Renderer";
 import * as FPS from "./FPS";
@@ -6,7 +7,7 @@ var canvas: HTMLCanvasElement;
 var drawAgain: boolean = false;
 var afterDraw: () => void;
 
-export function init(model:Game, afterDrawHook:() => void) {
+export function init(afterDrawHook:() => void) {
 	canvas = <HTMLCanvasElement>document.getElementById("game");
 	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;
@@ -14,7 +15,6 @@ export function init(model:Game, afterDrawHook:() => void) {
 	afterDraw = afterDrawHook;
 
 	Renderer.init(canvas);
-	Renderer.setModel(model);
 
 	window.addEventListener("resize", function () {
 		let w: number = window.innerWidth;
@@ -24,10 +24,14 @@ export function init(model:Game, afterDrawHook:() => void) {
 		canvas.height = h;
 
 		Renderer.resize(w, h);
-		if (!drawAgain) { Renderer.draw(); }
+		//if (!drawAgain) { Renderer.draw(); }
 	});
 
 	FPS.enable();
+}
+
+export function notifyGameChanged(): void {
+	Renderer.setGame(Model.getGame());
 }
 
 export function startDrawLoop(drawLoop:boolean = true) {

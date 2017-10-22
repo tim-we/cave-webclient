@@ -12,7 +12,7 @@ import {
 	IServerLogMessage,
 	IServerRejection,
 	IServerLobbyUpdate
-} from "./ICommunication";
+} from "../Protocol/ICommunication";
 
 import Game from "../Model/Game";
 import * as GameLog from "../View/GameLog";

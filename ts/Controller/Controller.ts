@@ -1,3 +1,4 @@
+import * as Model from "../Model/Model";
 import Game from "../Model/Game";
 import * as View from "../View/View";
 import { Connection } from "./IConnection";
@@ -10,15 +11,15 @@ import Server from "./Server";
 import {
 	IServerMessage,
 	IServerGameStart
-} from "./ICommunication";
+} from "../Protocol/ICommunication";
 
 var connection: Connection = new Server();
 //var connection: Connection = new LocalTestServer();
-var model: Game = null;
-
-//var tmp: number = 0;
 
 window.addEventListener("load", () => {
+
+	GameLog.log("Inititalizing view components...");
+	View.init(mainloop);
 
 	GameLog.log("Connecting...");
 
@@ -33,9 +34,7 @@ window.addEventListener("load", () => {
 			connection.setUpdateListener(serverUpdateHandler);
 			GameLog.log("Starting game!");
 
-			model = new Game(data);
-
-			View.init(model, mainloop);
+			Model.newGame(data);
 
 			mainloop();
 			
@@ -47,21 +46,21 @@ window.addEventListener("load", () => {
 });
 
 function mainloop() {
-	if (model) {
-		model.Player.setForce(UserInput.isPressed());
+	let game: Game = Model.getGame();
 
-		if (model.aliveCount() > 0) {
-			model.update();
+	if (game) {
+		game.Player.setForce(UserInput.isPressed());
+
+		if (game.aliveCount() > 0) {
+			game.update();
 		}
 	}
-
-	/*if (tmp++ > 42) {
-		View.stopDrawLoop();
-	}//*/
 }
 
-function serverUpdateHandler(data:IServerMessage) {
-	if(model) {
-		model.updateData(data);
+function serverUpdateHandler(data: IServerMessage) {
+	let game: Game = Model.getGame();
+
+	if(game) {
+		game.updateData(data);
 	}
 }

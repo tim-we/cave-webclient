@@ -9,7 +9,7 @@ import {
 	IServerGameStateUpdate,
 	IServerGameStart,
 	IServerLobbyUpdate
-} from "./ICommunication";
+} from "../Protocol/ICommunication";
 
 import Game from "../Model/Game";
 
