@@ -358,7 +358,7 @@ exports.default = Color;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Model_1 = __webpack_require__(7);
+const Game_1 = __webpack_require__(7);
 const View = __webpack_require__(12);
 const UserInput = __webpack_require__(25);
 const GameLog = __webpack_require__(2);
@@ -377,7 +377,7 @@ window.addEventListener("load", () => {
         .then((data) => {
         connection.setUpdateListener(serverUpdateHandler);
         GameLog.log("Starting game!");
-        model = new Model_1.default(data);
+        model = new Game_1.default(data);
         View.init(model, mainloop);
         mainloop();
         View.startDrawLoop();

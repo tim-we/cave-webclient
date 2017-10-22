@@ -1,4 +1,4 @@
-import Model from "../Model/Model";
+import Game from "../Model/Game";
 import * as Renderer from "./Renderer";
 import * as FPS from "./FPS";
 
@@ -6,7 +6,7 @@ var canvas: HTMLCanvasElement;
 var drawAgain: boolean = false;
 var afterDraw: () => void;
 
-export function init(model:Model, afterDrawHook:() => void) {
+export function init(model:Game, afterDrawHook:() => void) {
 	canvas = <HTMLCanvasElement>document.getElementById("game");
 	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;

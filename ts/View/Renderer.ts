@@ -1,4 +1,4 @@
-import Model from "../Model/Model";
+import Game from "../Model/Game";
 import Matrix from "../Model/Matrix";
 
 import * as MapRenderer from "./MapRenderer";
@@ -13,7 +13,7 @@ const glOptions = {
 };
 
 var gl: WebGLRenderingContext = null;
-var model: Model = null;
+var model: Game = null;
 
 var projMatrix: Matrix = new Matrix();
 var viewMatrix: Matrix = new Matrix();
@@ -52,7 +52,7 @@ export function init(canvas: HTMLCanvasElement):void {
 	PlayerRenderer.init(gl);
 }
 
-export function setModel(m: Model) {
+export function setModel(m: Game) {
 	model = m;
 	MapRenderer.setModelMap(model.Map);
 }

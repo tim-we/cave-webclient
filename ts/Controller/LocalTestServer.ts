@@ -11,7 +11,7 @@ import {
 	IServerLobbyUpdate
 } from "./ICommunication";
 
-import Model from "../Model/Model";
+import Game from "../Model/Game";
 
 const UPDATE_RATE = 100;
 
@@ -112,7 +112,7 @@ export default class LocalTestServer implements Connection {
 		return this.connected;
 	}
 
-	public updateState(model:Model) {
+	public updateState(model:Game) {
 		// ignore data for now
 	}
 

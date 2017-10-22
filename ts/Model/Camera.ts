@@ -1,4 +1,4 @@
-import Model from "./Model";
+import Game from "./Game";
 import Vector from "./Vector";
 import Matrix from "./Matrix";
 
@@ -26,7 +26,7 @@ export default class Camera {
 		this.Rotation = rotation;
 	}
 
-	public update(model: Model, t: number): void {
+	public update(model: Game, t: number): void {
 		// update position
 		Vector.axpy(t, this.Velocity, this.Position);
 

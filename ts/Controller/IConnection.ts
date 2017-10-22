@@ -1,4 +1,4 @@
-import Model from "../Model/Model";
+import Game from "../Model/Game";
 import {
 	IServerGameStart,
 	IServerGameStateUpdate,
@@ -17,7 +17,7 @@ export interface Connection {
 
 	isConnected: () => boolean;
 
-	updateState: (model:Model) => void;
+	updateState: (model:Game) => void;
 
 	setUpdateListener: (x:GameUpdateListener) => void;
 }

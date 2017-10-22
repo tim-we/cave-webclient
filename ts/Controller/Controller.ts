@@ -1,4 +1,4 @@
-import Model from "../Model/Model";
+import Game from "../Model/Game";
 import * as View from "../View/View";
 import { Connection } from "./IConnection";
 
@@ -14,7 +14,7 @@ import {
 
 var connection: Connection = new Server();
 //var connection: Connection = new LocalTestServer();
-var model: Model = null;
+var model: Game = null;
 
 //var tmp: number = 0;
 
@@ -33,7 +33,7 @@ window.addEventListener("load", () => {
 			connection.setUpdateListener(serverUpdateHandler);
 			GameLog.log("Starting game!");
 
-			model = new Model(data);
+			model = new Game(data);
 
 			View.init(model, mainloop);
 

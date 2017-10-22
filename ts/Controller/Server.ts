@@ -14,7 +14,7 @@ import {
 	IServerLobbyUpdate
 } from "./ICommunication";
 
-import Model from "../Model/Model";
+import Game from "../Model/Game";
 import * as GameLog from "../View/GameLog";
 
 type wsMessageHandler = (data:IServerMessage) => void;
@@ -125,7 +125,7 @@ export default class Server implements Connection {
 		return this.ws && this.ws.readyState === this.ws.OPEN;
 	}
 
-	public updateState(model:Model) {
+	public updateState(model:Game) {
 		let msg: IClientStateUpdate = {
 			type: "state",
 			time: 0, // TODO: model time
