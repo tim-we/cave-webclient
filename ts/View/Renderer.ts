@@ -62,8 +62,7 @@ export function draw() {
 	
 	updateTransformation();
 
-	// MapRenderer will clear the color buffer
-	gl.clear(gl.STENCIL_BUFFER_BIT);
+	// MapRenderer will clear color & stencil buffer
 
 	MapRenderer.draw(transformMatrix);
 	

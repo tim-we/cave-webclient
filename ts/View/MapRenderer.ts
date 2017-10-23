@@ -15,8 +15,11 @@ var gl: WebGLRenderingContext = null;
 var buffer: WebGLBuffer = null;
 var program: WebGLProgram = null;
 var vertexPosAttrib: number = -1;
+
 var uniformPM: WebGLUniformLocation = null;
 var uniformZ: WebGLUniformLocation = null;
+var uniformLayer: WebGLUniformLocation = null;
+var uniformColor: WebGLUniformLocation = null;
 
 var bgColor: Color = new Color(0.0, 0.6, 0.05);
 
@@ -37,6 +40,8 @@ export function init(_gl:WebGLRenderingContext) {
 
 		uniformPM = gl.getUniformLocation(program, "uPMatrix");
 		uniformZ = gl.getUniformLocation(program, "zPos");
+		uniformLayer = gl.getUniformLocation(program, "layer");
+		uniformColor = gl.getUniformLocation(program, "worldColor");
 }
 
 export function setMap(map:Map) {
@@ -57,13 +62,10 @@ export function draw(proj:Matrix): void {
 	// background color
 	bgColor.setClearColor(gl);
 
-	gl.clear(gl.COLOR_BUFFER_BIT);
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
 
 	// do we have data to draw?
 	if (!data) { return; }
-
-	gl.enable(gl.BLEND);
-	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 	gl.useProgram(program);
 	gl.enableVertexAttribArray(vertexPosAttrib);
@@ -87,8 +89,12 @@ function drawLayer(index: number, proj: Matrix): void {
 	// only draw (&increment stencil) where stencil value is `index`
 	gl.stencilFunc(gl.LEQUAL, index, 0xFF);
 
-	// set z position
+	// send z position & layer
 	gl.uniform1f(uniformZ, layerGetZ(index));
+	gl.uniform1i(uniformLayer, index);
+
+	// send color
+	bgColor.setUniform3(gl, uniformColor);
 
 	// send projection matrix to GPU
 	proj.uniform(gl, uniformPM);

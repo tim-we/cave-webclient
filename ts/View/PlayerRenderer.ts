@@ -83,9 +83,8 @@ export function draw(transform: Matrix, player: AbstractPlayer) {
 	transform.uniform(gl, uniformPM);
 	gl.uniform1f(uniformZ, layerGetZ(player.Layer));
 	gl.uniform1f(uniformRadius, RADIUS);
-	//player.setPositionUniform(gl, uniformPos);
 	gl.uniform2f(uniformPos, player.Position.getX(), player.Position.getY());
-	player.Color.setUniform(gl, uniformColor);
+	player.Color.setUniform4(gl, uniformColor);
 
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // 2 triangles
 

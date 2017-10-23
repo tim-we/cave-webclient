@@ -65,7 +65,7 @@ export function draw(transform:Matrix, player:AbstractPlayer): void {
 
 	transform.uniform(gl, uniformPM);
 	gl.uniform1f(uniformZ, layerGetZ(player.Layer));
-	player.Color.setUniform(gl, uniformColor);
+	player.Color.setUniform4(gl, uniformColor);
 
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, AbstractPlayer.getTailVertexCount());
 }

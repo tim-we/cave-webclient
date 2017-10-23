@@ -16,7 +16,11 @@ export default class Color {
 		gl.clearColor(this.red, this.green, this.blue, this.alpha);
 	}
 
-	public setUniform(gl: WebGLRenderingContext, location:WebGLUniformLocation): void {
+	public setUniform3(gl: WebGLRenderingContext, location:WebGLUniformLocation): void {
+		gl.uniform3f(location, this.red, this.green, this.blue);
+	}
+	
+	public setUniform4(gl: WebGLRenderingContext, location:WebGLUniformLocation): void {
 		gl.uniform4f(location, this.red, this.green, this.blue, this.alpha);
 	}
 
