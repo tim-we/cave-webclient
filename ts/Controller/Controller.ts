@@ -39,7 +39,21 @@ window.addEventListener("load", () => {
 			mainloop();
 			
 			View.startDrawLoop();
-		}).catch((reason) => {
+
+			Model.getGame().Countdown.addListener(t => {
+				GameLog.log(`${t}...`);
+			});
+
+			return Model.getGame().Countdown.waitForGameStart();
+		})
+		.then(() => {
+			GameLog.log("Go!");
+
+			setTimeout(() => {
+				Model.getGame().Player.setFirstInputReceived();
+			}, 1000);
+		})
+		.catch((reason) => {
 			GameLog.error("Something went wrong: " + reason);
 		});
 	

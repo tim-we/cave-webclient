@@ -384,8 +384,8 @@ exports.default = Color;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Model = __webpack_require__(5);
-const Renderer = __webpack_require__(14);
-const FPS = __webpack_require__(25);
+const Renderer = __webpack_require__(15);
+const FPS = __webpack_require__(26);
 var canvas;
 var drawAgain = false;
 var afterDraw;
@@ -437,9 +437,9 @@ function draw() {
 Object.defineProperty(exports, "__esModule", { value: true });
 const Model = __webpack_require__(5);
 const View = __webpack_require__(7);
-const UserInput = __webpack_require__(26);
+const UserInput = __webpack_require__(27);
 const GameLog = __webpack_require__(2);
-const Server_1 = __webpack_require__(27);
+const Server_1 = __webpack_require__(28);
 var connection = new Server_1.default();
 window.addEventListener("load", () => {
     GameLog.log("Inititalizing view components...");
@@ -458,7 +458,18 @@ window.addEventListener("load", () => {
         Model.newGame(data);
         mainloop();
         View.startDrawLoop();
-    }).catch((reason) => {
+        Model.getGame().Countdown.addListener(t => {
+            GameLog.log(`${t}...`);
+        });
+        return Model.getGame().Countdown.waitForGameStart();
+    })
+        .then(() => {
+        GameLog.log("Go!");
+        setTimeout(() => {
+            Model.getGame().Player.setFirstInputReceived();
+        }, 1000);
+    })
+        .catch((reason) => {
         GameLog.error("Something went wrong: " + reason);
     });
 });
@@ -489,7 +500,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Player_1 = __webpack_require__(10);
 const OnlinePlayer_1 = __webpack_require__(11);
 const Camera_1 = __webpack_require__(12);
-const Map_1 = __webpack_require__(13);
+const Countdown_1 = __webpack_require__(13);
+const Map_1 = __webpack_require__(14);
 class Game {
     constructor(data) {
         this.Speed = 0.42;
@@ -500,6 +512,7 @@ class Game {
         this.NextTime = data.time;
         this.TimeDelta = 0.0;
         this.LastUpdate = performance.now();
+        this.Countdown = new Countdown_1.default(Math.max(3, Math.abs(this.Time)));
         this.Camera = new Camera_1.default(0, -0.5, data.rotation);
         this.OnlinePlayers = new Array(n - 1);
         let j = 0;
@@ -540,6 +553,7 @@ class Game {
         this.LastUpdate = performance.now();
         let t = d / 1000;
         this.Time = Math.min(this.Time + t, this.NextTime);
+        this.Countdown.update(this.Time);
         if (this.Time >= 0) {
             if (this.Player.Alive) {
                 this.Player.move(t);
@@ -595,6 +609,7 @@ class Player extends AbstractPlayer_1.default {
         }
         this.Force = value;
     }
+    setFirstInputReceived() { this.FirstInputReceived = true; }
     getForce() { return this.Force; }
     update(t) {
         if (this.FirstInputReceived) {
@@ -650,7 +665,7 @@ exports.default = OnlinePlayer;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Vector_1 = __webpack_require__(0);
-const SPEED = 4.2;
+const SPEED = 5;
 const Offset = new Vector_1.default(0.0, 1.0);
 const FULLCIRCLE = 2.0 * Math.PI;
 let tmp1 = new Vector_1.default();
@@ -736,6 +751,55 @@ function limitSpeed(vel) {
 
 /***/ }),
 /* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+class Countdown {
+    constructor(time) {
+        this.Listeners = [];
+        this.PromiseResolvers = [];
+        this.expired = false;
+        this.TimeLeft = time;
+    }
+    addListener(listener) {
+        this.Listeners.push(listener);
+        if (!this.expired) {
+            listener(this.TimeLeft);
+        }
+    }
+    notify() {
+        let t = this.TimeLeft;
+        this.Listeners.forEach(listener => listener(t));
+    }
+    update(gameTime) {
+        if (this.expired) {
+            return;
+        }
+        let t = Math.ceil(Math.abs(gameTime));
+        if (t !== this.TimeLeft) {
+            this.TimeLeft = t;
+            this.notify();
+        }
+        if (gameTime >= 0) {
+            this.expired = true;
+            this.PromiseResolvers.forEach(resolve => resolve());
+            this.Listeners.length = 0;
+        }
+    }
+    waitForGameStart() {
+        let _this = this;
+        return new Promise(resolve => {
+            _this.PromiseResolvers.push(resolve);
+        });
+    }
+}
+exports.default = Countdown;
+
+
+/***/ }),
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -842,15 +906,15 @@ exports.default = Map;
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Matrix_1 = __webpack_require__(15);
-const MapRenderer = __webpack_require__(16);
-const PlayerRenderer = __webpack_require__(19);
+const Matrix_1 = __webpack_require__(16);
+const MapRenderer = __webpack_require__(17);
+const PlayerRenderer = __webpack_require__(20);
 const glOptions = {
     alpha: false,
     stencil: true,
@@ -918,7 +982,7 @@ function updateTransformation() {
 
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1025,7 +1089,7 @@ exports.default = Matrix;
 
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1049,7 +1113,7 @@ var bgColor = new Color_1.default(0.0, 0.6, 0.05);
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(17), __webpack_require__(18));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(18), __webpack_require__(19));
     vertexPosAttrib = gl.getAttribLocation(program, "vPosition");
     uniformPM = gl.getUniformLocation(program, "uPMatrix");
     uniformZ = gl.getUniformLocation(program, "zPos");
@@ -1099,26 +1163,26 @@ function drawLayer(index, proj) {
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\n\r\nuniform float zPos;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n}"
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform float blendFactor;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = vec4(.0, .0, .0, blendFactor);\r\n}"
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const ShaderTools_1 = __webpack_require__(3);
-const TailRenderer = __webpack_require__(20);
+const TailRenderer = __webpack_require__(21);
 const Tools_1 = __webpack_require__(4);
 const RADIUS = 0.05;
 var gl = null;
@@ -1144,7 +1208,7 @@ function init(_gl) {
     data[6] = 1.0;
     data[7] = 1.0;
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(23), __webpack_require__(24));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(24), __webpack_require__(25));
     vertexAttribSquare = gl.getAttribLocation(program, "squareCorner");
     uniformRadius = gl.getUniformLocation(program, "radius");
     uniformColor = gl.getUniformLocation(program, "pColor");
@@ -1176,7 +1240,7 @@ exports.draw = draw;
 
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1196,7 +1260,7 @@ var uniformZ = null;
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(21), __webpack_require__(22));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(22), __webpack_require__(23));
     vertexAttribPos = gl.getAttribLocation(program, "vPosition");
     vertexAttribPow = gl.getAttribLocation(program, "vIntensity");
     uniformColor = gl.getUniformLocation(program, "pColor");
@@ -1227,31 +1291,31 @@ exports.draw = draw;
 
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\nattribute float vIntensity;\r\n\r\nuniform float zPos;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvarying mediump float opacity;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n\r\n\topacity = vIntensity;\r\n}"
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying mediump float opacity;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = vec4(pColor.rgb, opacity);\r\n}"
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 squareCorner;\r\n\r\nuniform vec2 playerPosition;\r\nuniform float zPos;\r\nuniform float radius;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\n// interpolate for the fragment-shader\r\nvarying vec2 cPos;\r\n\r\nvoid main(void) {\r\n\tfloat x = playerPosition.x + radius * squareCorner.x;\r\n\tfloat y = playerPosition.y + radius * squareCorner.y;\r\n\r\n\tgl_Position = uPMatrix * vec4(x, y, zPos, 1.0);\r\n\r\n\tcPos = squareCorner;\r\n}"
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying vec2 cPos;\r\n\r\nconst vec4 CENTER  = vec4(1.0, 1.0, 1.0, 1.0);\r\nconst vec4 OUTSIDE = vec4(0.0, 0.0, 0.0, 0.0);\r\n\r\nvoid main(void) {\r\n\t\r\n\tfloat d = dot(cPos,cPos);\r\n\r\n\tif(d < 1.0) { // inside\r\n\t\tfloat r = sqrt(d);\r\n\r\n\t\tif(r <= 0.5) {\r\n\t\t\tgl_FragColor = mix(CENTER, pColor, 2.0 * r);\r\n\t\t} else {\r\n\t\t\t//gl_FragColor = mix(pColor, OUTSIDE, 2.0 * r - 1.0);\r\n\t\t\tgl_FragColor = vec4(pColor.rgb, 2.0 - 2.0 * r);\r\n\t\t}\r\n\t} else { // outside\r\n\t\tgl_FragColor = OUTSIDE;\r\n\t}\r\n}"
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1291,7 +1355,7 @@ function updateDisplay() {
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1374,7 +1438,7 @@ document.addEventListener("keyup", function (e) {
 
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

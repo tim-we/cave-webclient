@@ -2,6 +2,7 @@ import Player from "./Player";
 import OnlinePlayer from "./OnlinePlayer";
 
 import Camera from "./Camera";
+import Countdown from "./Countdown";
 
 import Map from "./Map";
 import {
@@ -26,7 +27,9 @@ export default class Game {
 
 	public Map: Map;
 
-	private Speed:number = 0.42; // main axis velocity
+	private Speed: number = 0.42; // main axis velocity
+	
+	public Countdown: Countdown;
 
 	constructor(data:IServerGameStart) {
 		let n: number = data.playerInitData.length; // number of players
@@ -40,6 +43,7 @@ export default class Game {
 		this.NextTime = data.time;
 		this.TimeDelta = 0.0;
 		this.LastUpdate = performance.now();
+		this.Countdown = new Countdown(Math.max(3, Math.abs(this.Time)));
 
 		// create camera
 		this.Camera = new Camera(0, -0.5, data.rotation);
@@ -106,6 +110,8 @@ export default class Game {
 		// update current model time
 		this.Time = Math.min(this.Time + t, this.NextTime);
 
+		this.Countdown.update(this.Time);
+		
 		if (this.Time >= 0) {
 			if (this.Player.Alive) {
 				// move player

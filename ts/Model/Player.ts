@@ -30,6 +30,8 @@ export default class Player extends AbstractPlayer {
 		this.Force = value;
 	}
 
+	public setFirstInputReceived(): void { this.FirstInputReceived = true; }
+
 	public getForce(): boolean { return this.Force; }
 
 	public update(t:number):void {

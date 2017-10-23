@@ -2,7 +2,7 @@ import Game from "./Game";
 import Vector from "./Vector";
 import Matrix from "./Matrix";
 
-const SPEED = 4.2;
+const SPEED = 5;
 
 const Offset: Vector = new Vector(0.0, 1.0);
 
