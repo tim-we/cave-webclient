@@ -1035,6 +1035,7 @@ const ShaderTools_1 = __webpack_require__(3);
 const Color_1 = __webpack_require__(6);
 const Tools_1 = __webpack_require__(4);
 const NUM_LAYERS = 8;
+const BLENDFACTOR = .37;
 var data = null;
 var bufferVersion = -1;
 var gl = null;
@@ -1043,8 +1044,7 @@ var program = null;
 var vertexPosAttrib = -1;
 var uniformPM = null;
 var uniformZ = null;
-var uniformLayer = null;
-var uniformColor = null;
+var uniformBlend = null;
 var bgColor = new Color_1.default(0.0, 0.6, 0.05);
 function init(_gl) {
     gl = _gl;
@@ -1053,8 +1053,7 @@ function init(_gl) {
     vertexPosAttrib = gl.getAttribLocation(program, "vPosition");
     uniformPM = gl.getUniformLocation(program, "uPMatrix");
     uniformZ = gl.getUniformLocation(program, "zPos");
-    uniformLayer = gl.getUniformLocation(program, "layer");
-    uniformColor = gl.getUniformLocation(program, "worldColor");
+    uniformBlend = gl.getUniformLocation(program, "blendFactor");
 }
 exports.init = init;
 function setMap(map) {
@@ -1074,6 +1073,8 @@ function draw(proj) {
     if (!data) {
         return;
     }
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.useProgram(program);
     gl.enableVertexAttribArray(vertexPosAttrib);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -1082,17 +1083,17 @@ function draw(proj) {
     for (let i = 0; i < NUM_LAYERS; i++) {
         drawLayer(i, proj);
     }
+    gl.disable(gl.BLEND);
     if (bufferVersion < data.version) {
-        setTimeout(updateBuffer, 0);
+        setTimeout(updateBuffer, 1);
     }
 }
 exports.draw = draw;
 function drawLayer(index, proj) {
     gl.stencilFunc(gl.LEQUAL, index, 0xFF);
     gl.uniform1f(uniformZ, Tools_1.layerGetZ(index));
-    gl.uniform1i(uniformLayer, index);
-    bgColor.setUniform3(gl, uniformColor);
     proj.uniform(gl, uniformPM);
+    gl.uniform1f(uniformBlend, (index + 1 === NUM_LAYERS) ? 1.0 : BLENDFACTOR);
     gl.drawArrays(gl.TRIANGLES, 0, 3 * data.numTriangles());
 }
 
@@ -1101,13 +1102,13 @@ function drawLayer(index, proj) {
 /* 17 */
 /***/ (function(module, exports) {
 
-module.exports = "attribute vec2 vPosition;\r\n\r\nuniform float zPos;\r\nuniform int layer;\r\nuniform vec3 worldColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvarying vec3 color;\r\n\r\nconst float b = -1.0 / 7.0;\r\nconst float a = -10.0 * b;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n\r\n\tfloat x = a / float(layer+2) + b;\r\n\r\n\tcolor = x * worldColor;\r\n}"
+module.exports = "attribute vec2 vPosition;\r\n\r\nuniform float zPos;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n}"
 
 /***/ }),
 /* 18 */
 /***/ (function(module, exports) {
 
-module.exports = "precision mediump float;\r\n\r\nvarying vec3 color;\r\n\r\nvoid main(void) {\r\n\t//gl_FragColor = vec4(0.0, 0.0, 0.0, 0.50);\r\n\tgl_FragColor = vec4(color, 1.0);\r\n}"
+module.exports = "precision mediump float;\r\n\r\nuniform float blendFactor;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = vec4(.0, .0, .0, blendFactor);\r\n}"
 
 /***/ }),
 /* 19 */

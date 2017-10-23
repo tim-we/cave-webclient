@@ -6,7 +6,8 @@ import Map from "../Model/Map";
 import Matrix from "../Model/Matrix";
 import { layerGetZ } from "./Tools";
 
-const NUM_LAYERS:number = 8;
+const NUM_LAYERS: number = 8;
+const BLENDFACTOR: number = .37;
 
 var data: Map = null;
 var bufferVersion: number = -1;
@@ -18,8 +19,7 @@ var vertexPosAttrib: number = -1;
 
 var uniformPM: WebGLUniformLocation = null;
 var uniformZ: WebGLUniformLocation = null;
-var uniformLayer: WebGLUniformLocation = null;
-var uniformColor: WebGLUniformLocation = null;
+var uniformBlend: WebGLUniformLocation = null;
 
 var bgColor: Color = new Color(0.0, 0.6, 0.05);
 
@@ -40,8 +40,7 @@ export function init(_gl:WebGLRenderingContext) {
 
 		uniformPM = gl.getUniformLocation(program, "uPMatrix");
 		uniformZ = gl.getUniformLocation(program, "zPos");
-		uniformLayer = gl.getUniformLocation(program, "layer");
-		uniformColor = gl.getUniformLocation(program, "worldColor");
+		uniformBlend = gl.getUniformLocation(program, "blendFactor");
 }
 
 export function setMap(map:Map) {
@@ -67,6 +66,9 @@ export function draw(proj:Matrix): void {
 	// do we have data to draw?
 	if (!data) { return; }
 
+	gl.enable(gl.BLEND);
+	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
 	gl.useProgram(program);
 	gl.enableVertexAttribArray(vertexPosAttrib);
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -79,9 +81,11 @@ export function draw(proj:Matrix): void {
 		drawLayer(i, proj);
 	}
 
+	gl.disable(gl.BLEND);
+
 	if (bufferVersion < data.version) {
 		// map data has been updated -> update buffer (after draw is complete)
-		setTimeout(updateBuffer, 0);
+		setTimeout(updateBuffer, 1);
 	}
 }
 
@@ -89,15 +93,14 @@ function drawLayer(index: number, proj: Matrix): void {
 	// only draw (&increment stencil) where stencil value is `index`
 	gl.stencilFunc(gl.LEQUAL, index, 0xFF);
 
-	// send z position & layer
+	// send z position
 	gl.uniform1f(uniformZ, layerGetZ(index));
-	gl.uniform1i(uniformLayer, index);
-
-	// send color
-	bgColor.setUniform3(gl, uniformColor);
 
 	// send projection matrix to GPU
 	proj.uniform(gl, uniformPM);
+
+	// send blend factor (last layer solid)
+	gl.uniform1f(uniformBlend, (index+1 === NUM_LAYERS) ? 1.0 : BLENDFACTOR);
 
 	gl.drawArrays(gl.TRIANGLES, 0, 3 * data.numTriangles());
 }
