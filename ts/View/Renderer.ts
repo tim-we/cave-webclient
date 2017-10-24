@@ -1,8 +1,10 @@
+import * as Model from "../Model/Model";
 import Game from "../Model/Game";
 import Matrix from "../Model/Matrix";
 
 import * as MapRenderer from "./MapRenderer";
 import * as PlayerRenderer from "./PlayerRenderer";
+import * as TransitionRenderer from "./TransitionRenderer";
 
 //declare var WebGLDebugUtils;
 const glOptions = {
@@ -47,9 +49,10 @@ export function init(canvas: HTMLCanvasElement):void {
 	projMatrix.setEntry(3, 3, 0.0);
 	resize(window.innerWidth, window.innerHeight);
 
-	// init map renderer
+	// init renderers
 	MapRenderer.init(gl);
 	PlayerRenderer.init(gl);
+	TransitionRenderer.init(gl);
 }
 
 export function setGame(g: Game) {
@@ -68,6 +71,12 @@ export function draw() {
 	
 	game.OnlinePlayers.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
 	PlayerRenderer.draw(transformMatrix, game.Player);
+
+	// handle transition
+	let t;
+	if (t = Model.getTransition()) {
+		TransitionRenderer.draw(t);
+	}
 }
 
 export function resize(width:number, height:number): void {

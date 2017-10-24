@@ -9,7 +9,7 @@ import {
 export const TAILLENGTH = 100;
 const TAILNODESIZE = 2 * (2 + 1);
 const TAILWIDTH = 0.005;
-const STARTSPEED: Vector = new Vector(0.0, 0.75);
+const STARTSPEED: Vector = new Vector(0.0, 1.0);
 
 var tmp: Vector = new Vector();
 
