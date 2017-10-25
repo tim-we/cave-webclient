@@ -58,7 +58,7 @@ export function init(_gl: WebGLRenderingContext):void {
 	TailRenderer.init(_gl);
 }
 
-export function draw(transform: Matrix, player: AbstractPlayer) {
+export function draw(transform: Matrix, player: AbstractPlayer, time?:number) {
 	gl.enable(gl.BLEND);
 	
 	TailRenderer.draw(transform, player);
@@ -80,9 +80,14 @@ export function draw(transform: Matrix, player: AbstractPlayer) {
 	// 0 < value
 	gl.stencilFunc(gl.LESS, 0, 0xFF);
 
+	let radius: number = RADIUS;
+
+	// pulse effect for THE player
+	if (player.Layer === 0) { radius += + 0.005 * (1.0 + Math.cos(5.0 * time)); }
+
 	transform.uniform(gl, uniformPM);
 	gl.uniform1f(uniformZ, layerGetZ(player.Layer));
-	gl.uniform1f(uniformRadius, RADIUS);
+	gl.uniform1f(uniformRadius, radius);
 	gl.uniform2f(uniformPos, player.Position.getX(), player.Position.getY());
 	player.Color.setUniform4(gl, uniformColor);
 

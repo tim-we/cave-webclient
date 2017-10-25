@@ -70,7 +70,7 @@ export function draw() {
 	MapRenderer.draw(transformMatrix);
 	
 	game.OnlinePlayers.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
-	PlayerRenderer.draw(transformMatrix, game.Player);
+	PlayerRenderer.draw(transformMatrix, game.Player, game.Time);
 
 	// handle transition
 	let t;

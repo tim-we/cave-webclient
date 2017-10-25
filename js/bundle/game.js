@@ -1020,7 +1020,7 @@ function draw() {
     updateTransformation();
     MapRenderer.draw(transformMatrix);
     game.OnlinePlayers.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
-    PlayerRenderer.draw(transformMatrix, game.Player);
+    PlayerRenderer.draw(transformMatrix, game.Player, game.Time);
     let t;
     if (t = Model.getTransition()) {
         TransitionRenderer.draw(t);
@@ -1281,7 +1281,7 @@ function init(_gl) {
     TailRenderer.init(_gl);
 }
 exports.init = init;
-function draw(transform, player) {
+function draw(transform, player, time) {
     gl.enable(gl.BLEND);
     TailRenderer.draw(transform, player);
     gl.useProgram(program);
@@ -1291,9 +1291,13 @@ function draw(transform, player) {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
     gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
     gl.stencilFunc(gl.LESS, 0, 0xFF);
+    let radius = RADIUS;
+    if (player.Layer === 0) {
+        radius += +0.005 * (1.0 + Math.cos(5.0 * time));
+    }
     transform.uniform(gl, uniformPM);
     gl.uniform1f(uniformZ, Tools_1.layerGetZ(player.Layer));
-    gl.uniform1f(uniformRadius, RADIUS);
+    gl.uniform1f(uniformRadius, radius);
     gl.uniform2f(uniformPos, player.Position.getX(), player.Position.getY());
     player.Color.setUniform4(gl, uniformColor);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
