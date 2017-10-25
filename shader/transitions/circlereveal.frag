@@ -2,31 +2,33 @@ precision mediump float;
 
 uniform float aspectRatio;
 uniform float progress;
-
-uniform vec2 uPosition;
+uniform vec2  uPosition;
 
 varying vec2 vPosition;
 
-const vec3 COLOR = vec3(.0,.0,.0);
+const vec4  OUTERCOLOR = vec4(.0, .0, .0, 1.0);
+const vec4  INNERCOLOR = vec4(.0, .0, .0, 0.0);
 const float SOFT_WIDTH = 0.3;
 
-void main(void) {
-	float x = vPosition.x - uPosition.x;
-	float y = aspectRatio * (vPosition.y - uPosition.y);
-
-	float d = sqrt(x*x + y*y);
-
-	float targetRadius = 2.0 * progress;
-
-	float alpha = 1.0;
-
+float alpha(float d, float targetRadius) {
 	if(d <= targetRadius) {
 		if(d < (targetRadius - SOFT_WIDTH)) {
-			alpha = 0.0;
+			return 0.0;
 		} else {
-			alpha = (SOFT_WIDTH - targetRadius + d) / SOFT_WIDTH;
+			return (SOFT_WIDTH - targetRadius + d) / SOFT_WIDTH;
 		}
+	} else {
+		return 1.0;
 	}
+}
 
-	gl_FragColor = vec4(COLOR, alpha);
+void main(void) {
+	float targetRadius = 2.0 * progress;
+
+	// compute distance from target point
+	float x = vPosition.x - uPosition.x;
+	float y = aspectRatio * (vPosition.y - uPosition.y);
+	float d = sqrt(x*x + y*y);
+
+	gl_FragColor = mix(INNERCOLOR, OUTERCOLOR, alpha(d, targetRadius));
 }

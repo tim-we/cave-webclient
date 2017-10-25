@@ -1,7 +1,7 @@
 import { IServerMapUpdate } from "../Protocol/ICommunication";
 import Vector from "./Vector";
 
-const N: number = 50; // number of segments
+const N: number = 42; // number of segments
 const SEGMENT_SIZE: number = 2 * 3 * 2; // 2 2D triangles (2*3 points)
 const SEGMENT_DATA_SIZE = 4 * 2; // 4 2D points
 
@@ -109,7 +109,7 @@ export default class Map {
 		this.data[offset + 1]	= data[dataOffset+1];
 	}
 
-	public isInside(p: Vector): boolean {
+	public getDistanceToWall(p: Vector): number {
 		let n: number = 0;
 		let i = this.insideCheckIndex;
 		let yTop: number, yBottom: number;
@@ -125,7 +125,7 @@ export default class Map {
 
 				if (n > 1) { console.log("Map: unexpected data order"); }
 
-				return this.isInsideSegment(i, p);
+				return this.getSegmentDistanceToWall(i, p);
 			} else {
 				i = (i+1) % N;
 			}
@@ -134,7 +134,7 @@ export default class Map {
 		}
 	}
 
-	private isInsideSegment(index: number, p: Vector): boolean {
+	private getSegmentDistanceToWall(index: number, p: Vector): number {
 		let offset: number = index * SEGMENT_SIZE;
 
 		let yBottom: number = this.data[offset + 1]; // (bottom-left y)
@@ -148,7 +148,7 @@ export default class Map {
 		let right: number = this.data[offset + 2] + rel * (this.data[offset + 10] - this.data[offset + 2]);
 
 		let x: number = p.getX();
-		return left <= x && x <= right;
+		return Math.max(0, Math.min(x-left, right-x));
 	}
 
 }

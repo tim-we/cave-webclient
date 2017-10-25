@@ -98,14 +98,10 @@ export default class Game {
 	}
 
 	public update(): void {
-		//if (this.TimeDelta <= 0.0) { return; }
 
-		// d = time since this method was called previously
-		let d: number = performance.now() - this.LastUpdate; //ms
+		// t = time since this method was called previously
+		let t: number = (performance.now() - this.LastUpdate) / 1000; //s
 		this.LastUpdate = performance.now();
-
-		// time in seconds
-		let t:number = d / 1000;
 
 		// update current model time
 		this.Time = Math.min(this.Time + t, this.NextTime);
@@ -116,13 +112,14 @@ export default class Game {
 			if (this.Player.Alive) {
 				// move player
 				this.Player.move(t);
-			
+				
+				let d = this.Map.getDistanceToWall(this.Player.Position);
+
 				// collision test
-				if (this.Map.isInside(this.Player.Position)) {
+				if (d > 0.0) {
 					// update velocity
 					this.Player.update(t);
 				} else {
-					//this.Player.move(-0.5 * t);
 					this.Player.die();
 				}
 			}

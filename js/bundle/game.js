@@ -605,15 +605,15 @@ class Game {
         }
     }
     update() {
-        let d = performance.now() - this.LastUpdate;
+        let t = (performance.now() - this.LastUpdate) / 1000;
         this.LastUpdate = performance.now();
-        let t = d / 1000;
         this.Time = Math.min(this.Time + t, this.NextTime);
         this.Countdown.update(this.Time);
         if (this.Time >= 0) {
             if (this.Player.Alive) {
                 this.Player.move(t);
-                if (this.Map.isInside(this.Player.Position)) {
+                let d = this.Map.getDistanceToWall(this.Player.Position);
+                if (d > 0.0) {
                     this.Player.update(t);
                 }
                 else {
@@ -861,7 +861,7 @@ exports.default = Countdown;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const N = 50;
+const N = 42;
 const SEGMENT_SIZE = 2 * 3 * 2;
 const SEGMENT_DATA_SIZE = 4 * 2;
 var tmp = new Float32Array(SEGMENT_DATA_SIZE);
@@ -925,7 +925,7 @@ class Map {
         this.data[offset] = data[dataOffset];
         this.data[offset + 1] = data[dataOffset + 1];
     }
-    isInside(p) {
+    getDistanceToWall(p) {
         let n = 0;
         let i = this.insideCheckIndex;
         let yTop, yBottom;
@@ -938,7 +938,7 @@ class Map {
                 if (n > 1) {
                     console.log("Map: unexpected data order");
                 }
-                return this.isInsideSegment(i, p);
+                return this.getSegmentDistanceToWall(i, p);
             }
             else {
                 i = (i + 1) % N;
@@ -946,7 +946,7 @@ class Map {
             n++;
         }
     }
-    isInsideSegment(index, p) {
+    getSegmentDistanceToWall(index, p) {
         let offset = index * SEGMENT_SIZE;
         let yBottom = this.data[offset + 1];
         let yTop = this.data[offset + 5];
@@ -955,7 +955,7 @@ class Map {
         let left = this.data[offset] + rel * (this.data[offset + 4] - this.data[offset]);
         let right = this.data[offset + 2] + rel * (this.data[offset + 10] - this.data[offset + 2]);
         let x = p.getX();
-        return left <= x && x <= right;
+        return Math.max(0, Math.min(x - left, right - x));
     }
 }
 exports.default = Map;
@@ -1443,7 +1443,7 @@ module.exports = "attribute vec2 aPosition;\r\n\r\nvarying vec2 vPosition;\r\n\r
 /* 29 */
 /***/ (function(module, exports) {
 
-module.exports = "precision mediump float;\r\n\r\nuniform float aspectRatio;\r\nuniform float progress;\r\n\r\nuniform vec2 uPosition;\r\n\r\nvarying vec2 vPosition;\r\n\r\nconst vec3 COLOR = vec3(.0,.0,.0);\r\nconst float SOFT_WIDTH = 0.3;\r\n\r\nvoid main(void) {\r\n\tfloat x = vPosition.x - uPosition.x;\r\n\tfloat y = aspectRatio * (vPosition.y - uPosition.y);\r\n\r\n\tfloat d = sqrt(x*x + y*y);\r\n\r\n\tfloat targetRadius = 2.0 * progress;\r\n\r\n\tfloat alpha = 1.0;\r\n\r\n\tif(d <= targetRadius) {\r\n\t\tif(d < (targetRadius - SOFT_WIDTH)) {\r\n\t\t\talpha = 0.0;\r\n\t\t} else {\r\n\t\t\talpha = (SOFT_WIDTH - targetRadius + d) / SOFT_WIDTH;\r\n\t\t}\r\n\t}\r\n\r\n\tgl_FragColor = vec4(COLOR, alpha);\r\n}"
+module.exports = "precision mediump float;\r\n\r\nuniform float aspectRatio;\r\nuniform float progress;\r\nuniform vec2  uPosition;\r\n\r\nvarying vec2 vPosition;\r\n\r\nconst vec4  OUTERCOLOR = vec4(.0, .0, .0, 1.0);\r\nconst vec4  INNERCOLOR = vec4(.0, .0, .0, 0.0);\r\nconst float SOFT_WIDTH = 0.3;\r\n\r\nfloat alpha(float d, float targetRadius) {\r\n\tif(d <= targetRadius) {\r\n\t\tif(d < (targetRadius - SOFT_WIDTH)) {\r\n\t\t\treturn 0.0;\r\n\t\t} else {\r\n\t\t\treturn (SOFT_WIDTH - targetRadius + d) / SOFT_WIDTH;\r\n\t\t}\r\n\t} else {\r\n\t\treturn 1.0;\r\n\t}\r\n}\r\n\r\nvoid main(void) {\r\n\tfloat targetRadius = 2.0 * progress;\r\n\r\n\t// compute distance from target point\r\n\tfloat x = vPosition.x - uPosition.x;\r\n\tfloat y = aspectRatio * (vPosition.y - uPosition.y);\r\n\tfloat d = sqrt(x*x + y*y);\r\n\r\n\tgl_FragColor = mix(INNERCOLOR, OUTERCOLOR, alpha(d, targetRadius));\r\n}"
 
 /***/ }),
 /* 30 */
