@@ -59,8 +59,6 @@ export function init(_gl: WebGLRenderingContext):void {
 }
 
 export function draw(transform: Matrix, player: AbstractPlayer, time?:number) {
-	gl.enable(gl.BLEND);
-	
 	TailRenderer.draw(transform, player);
 
 	gl.useProgram(program);
@@ -92,6 +90,4 @@ export function draw(transform: Matrix, player: AbstractPlayer, time?:number) {
 	player.Color.setUniform4(gl, uniformColor);
 
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // 2 triangles
-
-	gl.disable(gl.BLEND);
 }

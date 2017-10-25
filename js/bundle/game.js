@@ -70,6 +70,48 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+function makeShader(gl, type, source) {
+    console.assert(type === gl.VERTEX_SHADER || type === gl.FRAGMENT_SHADER);
+    let shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error("Shader compile error ", gl.getShaderInfoLog(shader));
+        return null;
+    }
+    return shader;
+}
+exports.makeShader = makeShader;
+function createProgram(gl, shaders) {
+    console.assert(shaders.length > 0);
+    let program = gl.createProgram();
+    shaders.forEach(shader => gl.attachShader(program, shader));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error("Unable to initialize the shader program.", gl.getProgramInfoLog(program));
+        return null;
+    }
+    return program;
+}
+exports.createProgram = createProgram;
+function createProgramFromSource(gl, vssource, fssource) {
+    let shaders = [
+        makeShader(gl, gl.VERTEX_SHADER, vssource),
+        makeShader(gl, gl.FRAGMENT_SHADER, fssource)
+    ];
+    let shaderProgram = createProgram(gl, shaders);
+    return shaderProgram;
+}
+exports.createProgramFromSource = createProgramFromSource;
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 class Vector {
     constructor(x = 0.0, y = 0.0) {
         this.data = new Float32Array(2);
@@ -131,48 +173,6 @@ exports.default = Vector;
 
 
 /***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-function makeShader(gl, type, source) {
-    console.assert(type === gl.VERTEX_SHADER || type === gl.FRAGMENT_SHADER);
-    let shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        console.error("Shader compile error ", gl.getShaderInfoLog(shader));
-        return null;
-    }
-    return shader;
-}
-exports.makeShader = makeShader;
-function createProgram(gl, shaders) {
-    console.assert(shaders.length > 0);
-    let program = gl.createProgram();
-    shaders.forEach(shader => gl.attachShader(program, shader));
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        console.error("Unable to initialize the shader program.", gl.getProgramInfoLog(program));
-        return null;
-    }
-    return program;
-}
-exports.createProgram = createProgram;
-function createProgramFromSource(gl, vssource, fssource) {
-    let shaders = [
-        makeShader(gl, gl.VERTEX_SHADER, vssource),
-        makeShader(gl, gl.FRAGMENT_SHADER, fssource)
-    ];
-    let shaderProgram = createProgram(gl, shaders);
-    return shaderProgram;
-}
-exports.createProgramFromSource = createProgramFromSource;
-
-
-/***/ }),
 /* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -192,6 +192,9 @@ function newGame(data) {
     game = new Game_1.default(data);
     transition = new Transitions_1.CircleReveal(-0.25, 0);
     View.notifyGameChanged();
+    game.waitForEnd().then(g => {
+        game = null;
+    });
     return game;
 }
 exports.newGame = newGame;
@@ -219,7 +222,7 @@ exports.getTransition = getTransition;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Vector_1 = __webpack_require__(0);
+const Vector_1 = __webpack_require__(1);
 const Color_1 = __webpack_require__(6);
 exports.TAILLENGTH = 100;
 const TAILNODESIZE = 2 * (2 + 1);
@@ -440,8 +443,8 @@ exports.CircleReveal = CircleReveal;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Model = __webpack_require__(2);
-const Renderer = __webpack_require__(16);
-const FPS = __webpack_require__(30);
+const Renderer = __webpack_require__(17);
+const FPS = __webpack_require__(34);
 var canvas;
 var drawAgain = false;
 var afterDraw;
@@ -493,9 +496,9 @@ function draw() {
 Object.defineProperty(exports, "__esModule", { value: true });
 const Model = __webpack_require__(2);
 const View = __webpack_require__(8);
-const UserInput = __webpack_require__(31);
+const UserInput = __webpack_require__(35);
 const GameLog = __webpack_require__(4);
-const Server_1 = __webpack_require__(32);
+const Server_1 = __webpack_require__(36);
 var connection = new Server_1.default();
 window.addEventListener("load", () => {
     GameLog.log("Inititalizing view components...");
@@ -524,6 +527,10 @@ window.addEventListener("load", () => {
         setTimeout(() => {
             Model.getGame().Player.setFirstInputReceived();
         }, 1000);
+        return Model.getGame().waitForEnd();
+    })
+        .then(() => {
+        GameLog.log("Game has ended.", true);
     })
         .catch((reason) => {
         GameLog.error("Something went wrong: " + reason);
@@ -533,9 +540,7 @@ function mainloop() {
     let game = Model.getGame();
     if (game) {
         game.Player.setForce(UserInput.isPressed());
-        if (game.aliveCount() > 0) {
-            game.update();
-        }
+        game.update();
     }
 }
 function serverUpdateHandler(data) {
@@ -557,10 +562,14 @@ const Player_1 = __webpack_require__(11);
 const OnlinePlayer_1 = __webpack_require__(12);
 const Camera_1 = __webpack_require__(13);
 const Countdown_1 = __webpack_require__(14);
-const Map_1 = __webpack_require__(15);
+const PromiseListener_1 = __webpack_require__(15);
+const Map_1 = __webpack_require__(16);
 class Game {
     constructor(data) {
+        this.EndListener = new PromiseListener_1.default();
+        this.ended = false;
         this.Speed = 0.42;
+        this.Danger = 0;
         let n = data.playerInitData.length;
         console.assert(n > 0);
         console.assert(data.time < 0, "unexpected: data.time = " + data.time);
@@ -609,12 +618,14 @@ class Game {
         this.LastUpdate = performance.now();
         this.Time = Math.min(this.Time + t, this.NextTime);
         this.Countdown.update(this.Time);
+        this.Danger = Math.max(0, this.Danger - 1.25 * t);
         if (this.Time >= 0) {
             if (this.Player.Alive) {
                 this.Player.move(t);
                 let d = this.Map.getDistanceToWall(this.Player.Position);
                 if (d > 0.0) {
                     this.Player.update(t);
+                    this.Danger = Math.max(this.Danger, 4.0 * Math.max(0, 0.25 - d));
                 }
                 else {
                     this.Player.die();
@@ -625,6 +636,13 @@ class Game {
             });
         }
         this.Camera.update(this, t);
+        if (!this.ended && this.aliveCount() === 0) {
+            this.ended = true;
+            let g = this;
+            setTimeout((pl) => {
+                pl.resolve([t]);
+            }, 1000, this.EndListener);
+        }
     }
     aliveCount() {
         let n = this.Player.Alive ? 1 : 0;
@@ -634,6 +652,15 @@ class Game {
             }
         });
         return n;
+    }
+    waitForEnd() {
+        let pl = this.EndListener;
+        return new Promise((resolve, reject) => {
+            pl.add(resolve);
+        });
+    }
+    getDanger() {
+        return this.Danger;
     }
 }
 exports.default = Game;
@@ -647,7 +674,7 @@ exports.default = Game;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const AbstractPlayer_1 = __webpack_require__(3);
-const Vector_1 = __webpack_require__(0);
+const Vector_1 = __webpack_require__(1);
 const GameLog = __webpack_require__(4);
 const ACCELERATION = new Vector_1.default(0.03, 0.0);
 var tmp = 0;
@@ -679,7 +706,8 @@ class Player extends AbstractPlayer_1.default {
         throw new Error("Method not implemented.");
     }
     die() {
-        GameLog.log("The player died.", true);
+        GameLog.log("WASTED!");
+        GameLog.log("The player died.");
         super.die();
     }
 }
@@ -694,7 +722,7 @@ exports.default = Player;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const AbstractPlayer_1 = __webpack_require__(3);
-const Vector_1 = __webpack_require__(0);
+const Vector_1 = __webpack_require__(1);
 let tmp = new Vector_1.default(0.0, 0.0);
 class OnlinePlayer extends AbstractPlayer_1.default {
     constructor(data, zPos) {
@@ -720,7 +748,7 @@ exports.default = OnlinePlayer;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Vector_1 = __webpack_require__(0);
+const Vector_1 = __webpack_require__(1);
 const SPEED = 5;
 const Offset = new Vector_1.default(0.0, 1.0);
 const FULLCIRCLE = 2.0 * Math.PI;
@@ -861,6 +889,34 @@ exports.default = Countdown;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+class PromiseListener {
+    constructor() {
+        this.resolves = [];
+    }
+    add(resolve) {
+        this.resolves.push(resolve);
+    }
+    resolve(args = []) {
+        let tmp = this.resolves;
+        this.resolves = [];
+        tmp.forEach(resolve => {
+            resolve.apply(this, args);
+        }, this);
+    }
+    clear() {
+        this.resolves.length = 0;
+    }
+}
+exports.default = PromiseListener;
+
+
+/***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 const N = 42;
 const SEGMENT_SIZE = 2 * 3 * 2;
 const SEGMENT_DATA_SIZE = 4 * 2;
@@ -955,24 +1011,26 @@ class Map {
         let left = this.data[offset] + rel * (this.data[offset + 4] - this.data[offset]);
         let right = this.data[offset + 2] + rel * (this.data[offset + 10] - this.data[offset + 2]);
         let x = p.getX();
-        return Math.max(0, Math.min(x - left, right - x));
+        let width = 0.5 * (right - left);
+        return Math.max(0, Math.min(x - left, right - x) / width);
     }
 }
 exports.default = Map;
 
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Model = __webpack_require__(2);
-const Matrix_1 = __webpack_require__(17);
-const MapRenderer = __webpack_require__(18);
-const PlayerRenderer = __webpack_require__(21);
-const TransitionRenderer = __webpack_require__(27);
+const Matrix_1 = __webpack_require__(18);
+const MapRenderer = __webpack_require__(19);
+const PlayerRenderer = __webpack_require__(22);
+const TransitionRenderer = __webpack_require__(28);
+const FX = __webpack_require__(31);
 const glOptions = {
     alpha: false,
     stencil: true,
@@ -997,6 +1055,7 @@ function init(canvas) {
         return;
     }
     let contextAttributes = gl.getContextAttributes();
+    gl.enable(gl.BLEND);
     console.assert(contextAttributes.stencil, "WebGL: stencil not available!");
     gl.enable(gl.STENCIL_TEST);
     gl.clearStencil(0);
@@ -1006,6 +1065,7 @@ function init(canvas) {
     MapRenderer.init(gl);
     PlayerRenderer.init(gl);
     TransitionRenderer.init(gl);
+    FX.init(gl);
 }
 exports.init = init;
 function setGame(g) {
@@ -1024,6 +1084,10 @@ function draw() {
     let t;
     if (t = Model.getTransition()) {
         TransitionRenderer.draw(t);
+    }
+    let d = game.getDanger();
+    if (d > 0.0) {
+        FX.danger(d);
     }
 }
 exports.draw = draw;
@@ -1045,7 +1109,7 @@ function updateTransformation() {
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1152,13 +1216,13 @@ exports.default = Matrix;
 
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShaderTools_1 = __webpack_require__(1);
+const ShaderTools_1 = __webpack_require__(0);
 const Color_1 = __webpack_require__(6);
 const Tools_1 = __webpack_require__(5);
 const NUM_LAYERS = 8;
@@ -1176,7 +1240,7 @@ var bgColor = new Color_1.default(0.0, 0.6, 0.05);
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(19), __webpack_require__(20));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(20), __webpack_require__(21));
     vertexPosAttrib = gl.getAttribLocation(program, "vPosition");
     uniformPM = gl.getUniformLocation(program, "uPMatrix");
     uniformZ = gl.getUniformLocation(program, "zPos");
@@ -1200,7 +1264,6 @@ function draw(proj) {
     if (!data) {
         return;
     }
-    gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.useProgram(program);
     gl.enableVertexAttribArray(vertexPosAttrib);
@@ -1210,7 +1273,6 @@ function draw(proj) {
     for (let i = 0; i < NUM_LAYERS; i++) {
         drawLayer(i, proj);
     }
-    gl.disable(gl.BLEND);
     if (bufferVersion < data.version) {
         setTimeout(updateBuffer, 1);
     }
@@ -1226,26 +1288,26 @@ function drawLayer(index, proj) {
 
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\n\r\nuniform float zPos;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n}"
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform float blendFactor;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = vec4(.0, .0, .0, blendFactor);\r\n}"
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShaderTools_1 = __webpack_require__(1);
-const TailRenderer = __webpack_require__(22);
+const ShaderTools_1 = __webpack_require__(0);
+const TailRenderer = __webpack_require__(23);
 const Tools_1 = __webpack_require__(5);
 const RADIUS = 0.05;
 var gl = null;
@@ -1271,7 +1333,7 @@ function init(_gl) {
     data[6] = 1.0;
     data[7] = 1.0;
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(25), __webpack_require__(26));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(26), __webpack_require__(27));
     vertexAttribSquare = gl.getAttribLocation(program, "squareCorner");
     uniformRadius = gl.getUniformLocation(program, "radius");
     uniformColor = gl.getUniformLocation(program, "pColor");
@@ -1282,7 +1344,6 @@ function init(_gl) {
 }
 exports.init = init;
 function draw(transform, player, time) {
-    gl.enable(gl.BLEND);
     TailRenderer.draw(transform, player);
     gl.useProgram(program);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -1301,19 +1362,18 @@ function draw(transform, player, time) {
     gl.uniform2f(uniformPos, player.Position.getX(), player.Position.getY());
     player.Color.setUniform4(gl, uniformColor);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    gl.disable(gl.BLEND);
 }
 exports.draw = draw;
 
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShaderTools_1 = __webpack_require__(1);
+const ShaderTools_1 = __webpack_require__(0);
 const AbstractPlayer_1 = __webpack_require__(3);
 const Tools_1 = __webpack_require__(5);
 var gl = null;
@@ -1327,7 +1387,7 @@ var uniformZ = null;
 function init(_gl) {
     gl = _gl;
     buffer = gl.createBuffer();
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(23), __webpack_require__(24));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(24), __webpack_require__(25));
     vertexAttribPos = gl.getAttribLocation(program, "vPosition");
     vertexAttribPow = gl.getAttribLocation(program, "vIntensity");
     uniformColor = gl.getUniformLocation(program, "pColor");
@@ -1358,37 +1418,37 @@ exports.draw = draw;
 
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 vPosition;\r\nattribute float vIntensity;\r\n\r\nuniform float zPos;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\nvarying mediump float opacity;\r\n\r\nvoid main(void) {\r\n\tgl_Position = uPMatrix * vec4(vPosition.x, vPosition.y, zPos, 1.0);\r\n\r\n\topacity = vIntensity;\r\n}"
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying mediump float opacity;\r\n\r\nvoid main(void) {\r\n\tgl_FragColor = vec4(pColor.rgb, opacity);\r\n}"
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 squareCorner;\r\n\r\nuniform vec2 playerPosition;\r\nuniform float zPos;\r\nuniform float radius;\r\n\r\n// to be linkable, precision must be explicitly stated\r\nuniform mediump vec4 pColor;\r\n\r\nuniform mat4 uPMatrix;\r\n\r\n// interpolate for the fragment-shader\r\nvarying vec2 cPos;\r\n\r\nvoid main(void) {\r\n\tfloat x = playerPosition.x + radius * squareCorner.x;\r\n\tfloat y = playerPosition.y + radius * squareCorner.y;\r\n\r\n\tgl_Position = uPMatrix * vec4(x, y, zPos, 1.0);\r\n\r\n\tcPos = squareCorner;\r\n}"
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform mediump vec4 pColor; // inside color\r\n\r\nvarying vec2 cPos;\r\n\r\nconst vec4 CENTER  = vec4(1.0, 1.0, 1.0, 1.0);\r\nconst vec4 OUTSIDE = vec4(0.0, 0.0, 0.0, 0.0);\r\n\r\nvoid main(void) {\r\n\t\r\n\tfloat d = dot(cPos,cPos);\r\n\r\n\tif(d < 1.0) { // inside\r\n\t\tfloat r = sqrt(d);\r\n\r\n\t\tif(r <= 0.5) {\r\n\t\t\tgl_FragColor = mix(CENTER, pColor, 2.0 * r);\r\n\t\t} else {\r\n\t\t\t//gl_FragColor = mix(pColor, OUTSIDE, 2.0 * r - 1.0);\r\n\t\t\tgl_FragColor = vec4(pColor.rgb, 2.0 - 2.0 * r);\r\n\t\t}\r\n\t} else { // outside\r\n\t\tgl_FragColor = OUTSIDE;\r\n\t}\r\n}"
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const ShaderTools_1 = __webpack_require__(1);
+const ShaderTools_1 = __webpack_require__(0);
 const Transitions_1 = __webpack_require__(7);
 var gl = null;
 var buffer = null;
@@ -1399,7 +1459,7 @@ var uniformProgress = null;
 var uniformRatio = null;
 function init(_gl) {
     gl = _gl;
-    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(28), __webpack_require__(29));
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(29), __webpack_require__(30));
     vertexPosAttrib = gl.getAttribLocation(program, "aPosition");
     uniformTarget = gl.getUniformLocation(program, "uPosition");
     uniformProgress = gl.getUniformLocation(program, "progress");
@@ -1419,7 +1479,6 @@ function init(_gl) {
 exports.init = init;
 function draw(transition) {
     if (transition instanceof Transitions_1.CircleReveal) {
-        gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         gl.useProgram(program);
         gl.enableVertexAttribArray(vertexPosAttrib);
@@ -1431,26 +1490,85 @@ function draw(transition) {
         gl.uniform1f(uniformProgress, transition.getProgress());
         gl.uniform1f(uniformRatio, gl.drawingBufferHeight / gl.drawingBufferWidth);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        gl.disable(gl.BLEND);
     }
 }
 exports.draw = draw;
 
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports) {
 
 module.exports = "attribute vec2 aPosition;\r\n\r\nvarying vec2 vPosition;\r\n\r\nvoid main(void) {\r\n\tgl_Position = vec4(aPosition, 1.0, 1.0);\r\n\tvPosition = aPosition;\r\n}"
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports) {
 
 module.exports = "precision mediump float;\r\n\r\nuniform float aspectRatio;\r\nuniform float progress;\r\nuniform vec2  uPosition;\r\n\r\nvarying vec2 vPosition;\r\n\r\nconst vec4  OUTERCOLOR = vec4(.0, .0, .0, 1.0);\r\nconst vec4  INNERCOLOR = vec4(.0, .0, .0, 0.0);\r\nconst float SOFT_WIDTH = 0.3;\r\n\r\nfloat alpha(float d, float targetRadius) {\r\n\tif(d <= targetRadius) {\r\n\t\tif(d < (targetRadius - SOFT_WIDTH)) {\r\n\t\t\treturn 0.0;\r\n\t\t} else {\r\n\t\t\treturn (SOFT_WIDTH - targetRadius + d) / SOFT_WIDTH;\r\n\t\t}\r\n\t} else {\r\n\t\treturn 1.0;\r\n\t}\r\n}\r\n\r\nvoid main(void) {\r\n\tfloat targetRadius = 2.0 * progress;\r\n\r\n\t// compute distance from target point\r\n\tfloat x = vPosition.x - uPosition.x;\r\n\tfloat y = aspectRatio * (vPosition.y - uPosition.y);\r\n\tfloat d = sqrt(x*x + y*y);\r\n\r\n\tgl_FragColor = mix(INNERCOLOR, OUTERCOLOR, alpha(d, targetRadius));\r\n}"
 
 /***/ }),
-/* 30 */
+/* 31 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const ShaderTools_1 = __webpack_require__(0);
+var gl = null;
+var buffer = null;
+var program = null;
+var vertexPosAttrib = -1;
+var uniformDanger = null;
+var uniformRatio = null;
+function init(_gl) {
+    gl = _gl;
+    program = ShaderTools_1.createProgramFromSource(gl, __webpack_require__(32), __webpack_require__(33));
+    vertexPosAttrib = gl.getAttribLocation(program, "aPosition");
+    uniformDanger = gl.getUniformLocation(program, "danger");
+    uniformRatio = gl.getUniformLocation(program, "aspectRatio");
+    buffer = gl.createBuffer();
+    let data = new Float32Array(4 * 2);
+    data[0] = -1.0;
+    data[1] = -1.0;
+    data[2] = -1.0;
+    data[3] = 1.0;
+    data[4] = 1.0;
+    data[5] = -1.0;
+    data[6] = 1.0;
+    data[7] = 1.0;
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+}
+exports.init = init;
+function danger(d) {
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.useProgram(program);
+    gl.enableVertexAttribArray(vertexPosAttrib);
+    gl.vertexAttribPointer(vertexPosAttrib, 2, gl.FLOAT, false, 2 * 4, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+    gl.stencilFunc(gl.ALWAYS, 0, 0xFF);
+    gl.uniform1f(uniformDanger, Math.max(0.0, d));
+    gl.uniform1f(uniformRatio, gl.drawingBufferHeight / gl.drawingBufferWidth);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+exports.danger = danger;
+
+
+/***/ }),
+/* 32 */
+/***/ (function(module, exports) {
+
+module.exports = "attribute vec2 aPosition;\r\n\r\nvarying vec2 vPosition;\r\n\r\nvoid main(void) {\r\n\tgl_Position = vec4(aPosition, 1.0, 1.0);\r\n\tvPosition = aPosition;\r\n}"
+
+/***/ }),
+/* 33 */
+/***/ (function(module, exports) {
+
+module.exports = "precision mediump float;\r\n\r\nuniform float danger;\r\nuniform float aspectRatio;\r\n\r\nvarying vec2 vPosition;\r\n\r\nconst float WIDTH = 0.125;\r\n\r\nvoid main(void) {\r\n\r\n\tfloat alpha = 0.0;\r\n\r\n\tfloat x = min(\r\n\t\t1.0 - abs(vPosition.x),\r\n\t\taspectRatio * (1.0 - abs(vPosition.y))\r\n\t);\r\n\r\n\tif(x < WIDTH) {\r\n\t\talpha = (WIDTH - x) / WIDTH;\r\n\t}\r\n\r\n\tgl_FragColor = vec4(.4, .0, .0, danger * alpha);\r\n}"
+
+/***/ }),
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1490,7 +1608,7 @@ function updateDisplay() {
 
 
 /***/ }),
-/* 31 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1573,7 +1691,7 @@ document.addEventListener("keyup", function (e) {
 
 
 /***/ }),
-/* 32 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

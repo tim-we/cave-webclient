@@ -109,6 +109,7 @@ export default class Map {
 		this.data[offset + 1]	= data[dataOffset+1];
 	}
 
+	// returns relative distance to wall
 	public getDistanceToWall(p: Vector): number {
 		let n: number = 0;
 		let i = this.insideCheckIndex;
@@ -148,7 +149,10 @@ export default class Map {
 		let right: number = this.data[offset + 2] + rel * (this.data[offset + 10] - this.data[offset + 2]);
 
 		let x: number = p.getX();
-		return Math.max(0, Math.min(x-left, right-x));
+		let width: number = 0.5 * (right - left);
+
+		// return relative distance (between 0 and 1)
+		return Math.max(0, Math.min(x-left, right-x)/width);
 	}
 
 }

@@ -66,7 +66,6 @@ export function draw(proj:Matrix): void {
 	// do we have data to draw?
 	if (!data) { return; }
 
-	gl.enable(gl.BLEND);
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 	gl.useProgram(program);
@@ -80,8 +79,6 @@ export function draw(proj:Matrix): void {
 	for(let i=0; i<NUM_LAYERS; i++) {
 		drawLayer(i, proj);
 	}
-
-	gl.disable(gl.BLEND);
 
 	if (bufferVersion < data.version) {
 		// map data has been updated -> update buffer (after draw is complete)

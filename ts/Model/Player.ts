@@ -51,7 +51,8 @@ export default class Player extends AbstractPlayer {
 	}
 
 	public die() {
-		GameLog.log("The player died.", true);
+		GameLog.log("WASTED!");
+		GameLog.log("The player died.");
 		super.die();
 	}
 }

@@ -43,7 +43,6 @@ export function init(_gl: WebGLRenderingContext) {
 
 export function draw(transition: Transition): void {
 	if (transition instanceof CircleReveal) {
-		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 	
 		gl.useProgram(program);
@@ -61,7 +60,5 @@ export function draw(transition: Transition): void {
 		gl.uniform1f(uniformRatio, gl.drawingBufferHeight / gl.drawingBufferWidth);
 		
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // 2 triangles
-
-		gl.disable(gl.BLEND);
 	}
 }

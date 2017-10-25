@@ -3,6 +3,7 @@ import OnlinePlayer from "./OnlinePlayer";
 
 import Camera from "./Camera";
 import Countdown from "./Countdown";
+import PromiseListener from "./PromiseListener";
 
 import Map from "./Map";
 import {
@@ -19,6 +20,9 @@ export default class Game {
 	private TimeDelta: number; // required for smooth model updates
 	private LastUpdate: number; // last time the update() method was called (local)
 
+	private EndListener: PromiseListener = new PromiseListener();
+	private ended: boolean = false;
+
 	public OnlinePlayers: OnlinePlayer[];
 
 	public Player: Player;
@@ -30,6 +34,8 @@ export default class Game {
 	private Speed: number = 0.42; // main axis velocity
 	
 	public Countdown: Countdown;
+
+	private Danger: number = 0;
 
 	constructor(data:IServerGameStart) {
 		let n: number = data.playerInitData.length; // number of players
@@ -107,8 +113,11 @@ export default class Game {
 		this.Time = Math.min(this.Time + t, this.NextTime);
 
 		this.Countdown.update(this.Time);
+
+		this.Danger = Math.max(0, this.Danger - 1.25 * t);
 		
 		if (this.Time >= 0) {
+
 			if (this.Player.Alive) {
 				// move player
 				this.Player.move(t);
@@ -119,6 +128,8 @@ export default class Game {
 				if (d > 0.0) {
 					// update velocity
 					this.Player.update(t);
+
+					this.Danger = Math.max(this.Danger, 4.0 * Math.max(0, 0.25 - d));
 				} else {
 					this.Player.die();
 				}
@@ -132,6 +143,16 @@ export default class Game {
 
 		// update camera
 		this.Camera.update(this, t);
+
+		// has game ended?
+		if (!this.ended && this.aliveCount()===0) {
+			this.ended = true;
+			let g: Game = this;
+
+			setTimeout((pl:PromiseListener) => {
+				pl.resolve([t]);
+			}, 1000, this.EndListener);
+		}
 	}
 
 	public aliveCount(): number {
@@ -142,5 +163,17 @@ export default class Game {
 		});
 
 		return n;
+	}
+
+	public waitForEnd(): Promise<void> {
+		let pl: PromiseListener = this.EndListener;
+
+		return new Promise<void>((resolve, reject) => {
+			pl.add(resolve);
+		});
+	}
+
+	public getDanger(): number {
+		return this.Danger;
 	}
 }

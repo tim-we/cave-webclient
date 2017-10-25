@@ -52,6 +52,12 @@ window.addEventListener("load", () => {
 			setTimeout(() => {
 				Model.getGame().Player.setFirstInputReceived();
 			}, 1000);
+
+			return Model.getGame().waitForEnd();
+		})
+		.then(() => {
+			GameLog.log("Game has ended.", true);
+
 		})
 		.catch((reason) => {
 			GameLog.error("Something went wrong: " + reason);
@@ -65,9 +71,7 @@ function mainloop() {
 	if (game) {
 		game.Player.setForce(UserInput.isPressed());
 
-		if (game.aliveCount() > 0) {
-			game.update();
-		}
+		game.update();
 	}
 }
 

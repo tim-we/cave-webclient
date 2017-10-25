@@ -20,6 +20,10 @@ export function newGame(data:IServerGameStart): Game{
 	transition = new CircleReveal(-0.25, 0);
 	View.notifyGameChanged();
 
+	game.waitForEnd().then(g => {
+		game = null;
+	});
+
 	return game;
 }
 

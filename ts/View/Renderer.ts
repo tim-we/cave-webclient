@@ -5,6 +5,7 @@ import Matrix from "../Model/Matrix";
 import * as MapRenderer from "./MapRenderer";
 import * as PlayerRenderer from "./PlayerRenderer";
 import * as TransitionRenderer from "./TransitionRenderer";
+import * as FX from "./FXRenderer";
 
 //declare var WebGLDebugUtils;
 const glOptions = {
@@ -38,6 +39,8 @@ export function init(canvas: HTMLCanvasElement):void {
 
 	let contextAttributes = gl.getContextAttributes();
 
+	gl.enable(gl.BLEND);
+
 	// set up stencil
 	console.assert(contextAttributes.stencil, "WebGL: stencil not available!");
 	gl.enable(gl.STENCIL_TEST);
@@ -53,6 +56,7 @@ export function init(canvas: HTMLCanvasElement):void {
 	MapRenderer.init(gl);
 	PlayerRenderer.init(gl);
 	TransitionRenderer.init(gl);
+	FX.init(gl);
 }
 
 export function setGame(g: Game) {
@@ -76,6 +80,11 @@ export function draw() {
 	let t;
 	if (t = Model.getTransition()) {
 		TransitionRenderer.draw(t);
+	}
+
+	let d: number = game.getDanger();
+	if (d > 0.0) {
+		FX.danger(d);
 	}
 }
 
