@@ -1,10 +1,13 @@
-export function makeShader(gl: WebGLRenderingContext, type:number, source: string):WebGLShader {
+import * as Config from "../Model/Config";
+import * as GameLog from "./GameLog";
+
+export function makeShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader {
   console.assert(type === gl.VERTEX_SHADER || type === gl.FRAGMENT_SHADER);
   
   let shader: WebGLShader = gl.createShader(type);
 
   // set the source code
-  gl.shaderSource(shader, source);
+  gl.shaderSource(shader, sourcemod(source));
 
   // compile the shader program
   gl.compileShader(shader);
@@ -29,6 +32,7 @@ export function createProgram(gl:WebGLRenderingContext, shaders:WebGLShader[]):W
   // see if linking worked
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
     console.error("Unable to initialize the shader program.", gl.getProgramInfoLog(program));
+    GameLog.error("Shader compilation error.");
     return null;
   }
 
@@ -51,7 +55,13 @@ export function createProgramFromSource(gl: WebGLRenderingContext, vssource: str
 
   let shaderProgram: WebGLProgram = createProgram(gl, shaders);
 
-  //gl.useProgram(shaderProgram);
-
   return shaderProgram;
+}
+
+function sourcemod(data: string): string {
+  if (Config.get<boolean>("lowShaderQuality")) {
+    return "#define LOW\n" + data;
+  } else {
+    return data;
+  }
 }

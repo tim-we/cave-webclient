@@ -1,4 +1,8 @@
+#ifdef LOW
+precision lowp float;
+#else
 precision mediump float;
+#endif
 
 uniform float aspectRatio;
 uniform float progress;
@@ -10,6 +14,7 @@ const vec4  OUTERCOLOR = vec4(.0, .0, .0, 1.0);
 const vec4  INNERCOLOR = vec4(.0, .0, .0, 0.0);
 const float SOFT_WIDTH = 0.3;
 
+#ifndef LOW
 float alpha(float d, float targetRadius) {
 	if(d <= targetRadius) {
 		if(d < (targetRadius - SOFT_WIDTH)) {
@@ -21,6 +26,7 @@ float alpha(float d, float targetRadius) {
 		return 1.0;
 	}
 }
+#endif
 
 void main(void) {
 	float targetRadius = 2.0 * progress;
@@ -30,5 +36,9 @@ void main(void) {
 	float y = aspectRatio * (vPosition.y - uPosition.y);
 	float d = sqrt(x*x + y*y);
 
+#ifdef LOW
+	gl_FragColor = (d < targetRadius) ? INNERCOLOR : OUTERCOLOR;
+#else
 	gl_FragColor = mix(INNERCOLOR, OUTERCOLOR, alpha(d, targetRadius));
+#endif
 }

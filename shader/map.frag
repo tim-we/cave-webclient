@@ -1,4 +1,8 @@
+#ifdef LOW
+precision lowp float;
+#else
 precision mediump float;
+#endif
 
 uniform float blendFactor;
 

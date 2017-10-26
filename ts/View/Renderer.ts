@@ -1,3 +1,4 @@
+import * as Config from "../Model/Config";
 import * as Model from "../Model/Model";
 import Game from "../Model/Game";
 import Matrix from "../Model/Matrix";
@@ -12,7 +13,7 @@ const glOptions = {
 	alpha: false,
 	stencil: true,
 	depth: false,
-	//antialias: false
+	antialias: true
 };
 
 var gl: WebGLRenderingContext = null;
@@ -22,7 +23,9 @@ var projMatrix: Matrix = new Matrix();
 var viewMatrix: Matrix = new Matrix();
 var transformMatrix: Matrix = new Matrix();
 
-export function init(canvas: HTMLCanvasElement):void {
+export function init(canvas: HTMLCanvasElement): void {
+	glOptions.antialias = Config.get<boolean>("antialias");
+	
 	try {
 		gl = <WebGLRenderingContext>(canvas.getContext("webgl", glOptions) || canvas.getContext("experimental-webgl", glOptions));
 		//gl = WebGLDebugUtils.makeDebugContext(canvas.getContext("webgl"));
@@ -56,7 +59,7 @@ export function init(canvas: HTMLCanvasElement):void {
 	MapRenderer.init(gl);
 	PlayerRenderer.init(gl);
 	TransitionRenderer.init(gl);
-	FX.init(gl);
+	if (Config.get<boolean>("fx")) { FX.init(gl); }
 }
 
 export function setGame(g: Game) {
@@ -82,9 +85,11 @@ export function draw() {
 		TransitionRenderer.draw(t);
 	}
 
-	let d: number = game.getDanger();
-	if (d > 0.0) {
-		FX.danger(d);
+	if (Config.get<boolean>("fx")) {
+		let d: number = game.getDanger();
+		if (d > 0.0) {
+			FX.danger(d);
+		}
 	}
 }
 
