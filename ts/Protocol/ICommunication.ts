@@ -56,7 +56,6 @@ export interface IServerGameStateUpdate extends IServerMessage {
 	type: "state";
 	time: number;
 	pdata: IPlayerData[];
-	rotation: number;
 	speed: number; // main axis velocity
 }
 

@@ -678,7 +678,6 @@ class Game {
         this.OnlinePlayers.forEach((p, i) => {
             p.updateData(data.pdata[i], this.TimeDelta);
         });
-        this.Camera.setRotation(data.rotation, this.TimeDelta);
         if (data.speed !== this.Speed) {
         }
     }
@@ -820,23 +819,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Vector_1 = __webpack_require__(1);
 const SPEED = 5;
 const Offset = new Vector_1.default(0.0, 1.0);
-const FULLCIRCLE = 2.0 * Math.PI;
+const ROTATION_SPEED = -0.075;
 let tmp1 = new Vector_1.default();
 let tmp2 = Object.seal(new Array(0, 0));
 let tmp3 = Object.seal(new Array(0, 0));
 class Camera {
     constructor(x, y, rotation = 0) {
         this.Velocity = new Vector_1.default();
-        this.RotationVelocity = 0;
         this.Position = new Vector_1.default(x, y);
-        this.Rotation = rotation;
+        this.BaseRotation = rotation;
+        this.lastYPos = y;
     }
     update(model, t) {
         Vector_1.default.axpy(t, this.Velocity, this.Position);
-        this.Rotation += t * this.RotationVelocity;
-        if (this.Rotation <= 0.0) {
-            this.Rotation += FULLCIRCLE;
-        }
         if (model.Player.Alive) {
             this.setTarget(model.Player.Position);
         }
@@ -859,22 +854,6 @@ class Camera {
             }
         }
     }
-    setRotation(alpha, time = 0) {
-        if (Math.abs(time) < 1e-12) {
-            this.Rotation = alpha;
-        }
-        else if (time > 0) {
-            let delta = alpha - this.Rotation;
-            let delta2 = alpha - FULLCIRCLE - this.Rotation;
-            if (Math.abs(delta2) < Math.abs(delta)) {
-                delta = delta2;
-            }
-            this.RotationVelocity = delta / time;
-        }
-        else {
-            this.RotationVelocity = 0;
-        }
-    }
     setTarget(target) {
         if (target !== tmp1) {
             tmp1.copyFrom(target);
@@ -885,12 +864,16 @@ class Camera {
         limitSpeed(this.Velocity);
     }
     setViewMatrix(view) {
-        view.makeZRotation(this.Rotation);
+        view.makeZRotation(this.getRotation());
         tmp2[0] = -this.Position.getX();
         tmp2[1] = -this.Position.getY();
         view.xvector(tmp2, tmp3);
         view.setEntry(0, 3, tmp3[0]);
         view.setEntry(1, 3, tmp3[1]);
+    }
+    getRotation() {
+        let y = this.Position.getY() - this.lastYPos;
+        return this.BaseRotation + ROTATION_SPEED * Math.max(0.0, y - 2.0);
     }
 }
 exports.default = Camera;

@@ -96,8 +96,6 @@ export default class Game {
 			p.updateData(data.pdata[i], this.TimeDelta);
 		});
 
-		this.Camera.setRotation(data.rotation, this.TimeDelta);
-
 		if(data.speed !== this.Speed) {
 			// TODO: update velocity for all players
 		}

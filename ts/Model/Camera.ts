@@ -6,7 +6,7 @@ const SPEED = 5;
 
 const Offset: Vector = new Vector(0.0, 1.0);
 
-const FULLCIRCLE: number = 2.0 * Math.PI;
+const ROTATION_SPEED: number = -0.075;
 
 let tmp1: Vector = new Vector();
 // fixed length arrays
@@ -18,21 +18,18 @@ export default class Camera {
 
 	private Velocity: Vector = new Vector();
 
-	private Rotation: number;
-	private RotationVelocity: number = 0;
+	private BaseRotation: number;
+	private lastYPos: number;
 
 	constructor(x:number, y:number, rotation:number = 0) {
 		this.Position = new Vector(x, y);
-		this.Rotation = rotation;
+		this.BaseRotation = rotation;
+		this.lastYPos = y;
 	}
 
 	public update(model: Game, t: number): void {
 		// update position
 		Vector.axpy(t, this.Velocity, this.Position);
-
-		// update rotation
-		this.Rotation += t * this.RotationVelocity;
-		if (this.Rotation <= 0.0) { this.Rotation += FULLCIRCLE; }
 
 		// update velocity
 		if (model.Player.Alive) {
@@ -63,22 +60,6 @@ export default class Camera {
 		}
 	}
 
-	public setRotation(alpha: number, time:number = 0): void {
-		if (Math.abs(time) < 1e-12) {
-			this.Rotation = alpha;
-		} else if (time > 0) {
-			let delta: number = alpha - this.Rotation;
-			let delta2: number = alpha - FULLCIRCLE - this.Rotation;
-
-			// handle wrap-around
-			if (Math.abs(delta2) < Math.abs(delta)) { delta = delta2; }
-
-			this.RotationVelocity = delta / time;
-		} else {
-			this.RotationVelocity = 0;
-		}
-	}
-
 	private setTarget(target:Vector): void {
 		if (target !== tmp1) {
 			tmp1.copyFrom(target);
@@ -93,7 +74,7 @@ export default class Camera {
 
 	public setViewMatrix(view: Matrix): void {
 		// rotation
-		view.makeZRotation(this.Rotation);
+		view.makeZRotation(this.getRotation());
 
 		// translate so that the fix point is this.Position:
 
@@ -106,6 +87,12 @@ export default class Camera {
 		// rotation around this.Position + translation by this.Position
 		view.setEntry(0, 3, tmp3[0]);
 		view.setEntry(1, 3, tmp3[1]);
+	}
+
+	private getRotation():number {
+		let y: number = this.Position.getY() - this.lastYPos;
+
+		return this.BaseRotation + ROTATION_SPEED * Math.max(0.0, y - 2.0);
 	}
 }
 

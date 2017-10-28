@@ -20,7 +20,6 @@ export default class LocalTestServer implements Connection {
 	private gameStarted:boolean = false;
 	private updateInterval: number;
 	private RoundStart: number;
-	private Rotation: number = 0.0;
 	private callback:GameUpdateListener = null;
 
 	public constructor() {
@@ -38,7 +37,6 @@ export default class LocalTestServer implements Connection {
 
 				this.updateInterval = setInterval(() => {
 					let time: number = Date.now() - this.RoundStart;
-					this.Rotation += 0.01;
 					
 					if(this.callback) {
 						this.callback({
@@ -48,7 +46,6 @@ export default class LocalTestServer implements Connection {
 								pos: { x: 0, y: 0 },
 								alv: true
 							}],
-							rotation: this.Rotation,
 							speed: 0.42
 						});
 					}
