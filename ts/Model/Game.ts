@@ -4,6 +4,7 @@ import OnlinePlayer from "./OnlinePlayer";
 import Camera from "./Camera";
 import Countdown from "./Countdown";
 import PromiseListener from "./PromiseListener";
+import { AnimationManager, DeathExplosion } from "./Animations";
 
 import Map from "./Map";
 import {
@@ -36,6 +37,8 @@ export default class Game {
 	public Countdown: Countdown;
 
 	private Danger: number = 0;
+
+	public Animations: AnimationManager = new AnimationManager();
 
 	constructor(data:IServerGameStart) {
 		let n: number = data.playerInitData.length; // number of players
@@ -130,6 +133,7 @@ export default class Game {
 					this.Danger = Math.max(this.Danger, 4.0 * Math.max(0, 0.25 - d));
 				} else {
 					this.Player.die();
+					this.Animations.add(new DeathExplosion(this.Player));
 				}
 			}
 	
@@ -151,6 +155,9 @@ export default class Game {
 				pl.resolve([t]);
 			}, 1000, this.EndListener);
 		}
+
+		// clean up expired animations
+		this.Animations.cleanUp();
 	}
 
 	public aliveCount(): number {

@@ -40,14 +40,10 @@ export function init(_gl: WebGLRenderingContext): void {
 	uniformZ = gl.getUniformLocation(program, "zPos");
 }
 
-export function draw(transform:Matrix, player:AbstractPlayer): void {
-	// assert gl.BLEND is enabled
+export function draw(transform: Matrix, player: AbstractPlayer): void {
 
 	gl.useProgram(program);
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-	//gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-
-	if (player === null || player.Tail === null) { console.log("null!"); }
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.bufferData(gl.ARRAY_BUFFER, player.Tail, gl.STREAM_DRAW);

@@ -65,3 +65,88 @@ function sourcemod(data: string): string {
     return data;
   }
 }
+
+export class ProgramContainer {
+  private gl: WebGLRenderingContext;
+  private program: WebGLProgram;
+  private vertexAttribs: VertexAttrib[] = [];
+  private vertexStride: number;
+  private buffer: WebGLBuffer;
+  private uniforms: Map<string, WebGLUniformLocation> = new Map();
+  private mode: number;
+
+  constructor(gl: WebGLRenderingContext, program: WebGLProgram, mode:number, stride:number) {
+    this.gl = gl;
+    this.program = program;
+    this.vertexStride = stride;
+    this.buffer = gl.createBuffer();
+    this.mode = mode;
+  }
+
+  public addVertexAttrib(
+    name: string,
+    size: number,
+    offset: number): void {
+    let indx: number = this.gl.getAttribLocation(this.program, name);
+    
+    this.vertexAttribs.push(new VertexAttrib(indx, size, offset));
+  }
+
+  public addUniforms(names: string[]): void {
+    names.forEach(name => {
+      let x: WebGLUniformLocation = this.gl.getUniformLocation(this.program, name);
+
+      if (x === null) {
+        throw new Error("uniform location not found");
+      }
+
+      this.uniforms.set(name, x);
+    }, this);
+  }
+
+  public getUniform(name: string): WebGLUniformLocation {
+    return this.uniforms.get(name);
+  }
+
+  public bufferData(data: Float32Array): void {
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, data, this.gl.STATIC_DRAW);
+  }
+
+  public use(): void {
+    this.gl.useProgram(this.program);
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
+  }
+  public setUpVertexAttrib(): void {
+    let gl = this.gl;
+
+    // set up vertex attrib
+    this.vertexAttribs.forEach(v => v.set(gl, this.vertexStride), this);
+  }
+
+  public draw(count: number) {
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
+    this.gl.drawArrays(this.mode, 0, count);
+
+    // unbind buffer
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
+  }
+}
+
+class VertexAttrib {
+  public index: number;
+  public size: number;
+  public offset: number;
+
+  constructor(indx:number, size:number, offset:number) {
+    this.index = indx;
+    this.size = size;
+    // assume gl.FLOAT (4 bytes)
+    this.offset = 4 * offset;
+  }
+
+  public set(gl: WebGLRenderingContext, stride: number): void {
+    gl.enableVertexAttribArray(this.index);
+    gl.vertexAttribPointer(this.index, this.size, gl.FLOAT, false, 4 * stride, this.offset);
+  }
+}

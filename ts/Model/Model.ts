@@ -27,6 +27,12 @@ export function newGame(data:IServerGameStart): Game{
 	return game;
 }
 
+export function update(): void {
+	if (game) {
+		game.update();
+	}
+}
+
 export function getTransition():Transition {
 	if (transition) {
 		if (transition.hasExpired()) {

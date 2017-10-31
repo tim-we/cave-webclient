@@ -61,6 +61,8 @@ export function init(_gl: WebGLRenderingContext):void {
 export function draw(transform: Matrix, player: AbstractPlayer, time?:number) {
 	TailRenderer.draw(transform, player);
 
+	if (!player.Alive) { return; }
+
 	gl.useProgram(program);
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 
@@ -69,7 +71,6 @@ export function draw(transform: Matrix, player: AbstractPlayer, time?:number) {
 
 	gl.vertexAttribPointer(vertexAttribSquare, 2, gl.FLOAT, false, 2 * 4, 0);
 	
-	//gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // normal blending
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // additive blending
 
 	// do not change (keep) stencil values
@@ -86,7 +87,7 @@ export function draw(transform: Matrix, player: AbstractPlayer, time?:number) {
 	transform.uniform(gl, uniformPM);
 	gl.uniform1f(uniformZ, layerGetZ(player.Layer));
 	gl.uniform1f(uniformRadius, radius);
-	gl.uniform2f(uniformPos, player.Position.getX(), player.Position.getY());
+	player.Position.uniform(gl, uniformPos);
 	player.Color.setUniform4(gl, uniformColor);
 
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // 2 triangles

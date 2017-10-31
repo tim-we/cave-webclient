@@ -78,4 +78,8 @@ export default class Vector {
 		return "(" + this.data[0] + "," + this.data[1] + ")";
 	}
 
+	public uniform(gl: WebGLRenderingContext, location: WebGLUniformLocation): void {
+		gl.uniform2fv(location, this.data);
+	}
+
 }

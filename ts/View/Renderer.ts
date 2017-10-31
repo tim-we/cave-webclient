@@ -7,6 +7,7 @@ import * as MapRenderer from "./MapRenderer";
 import * as PlayerRenderer from "./PlayerRenderer";
 import * as TransitionRenderer from "./TransitionRenderer";
 import * as FX from "./FXRenderer";
+import * as AnimationRenderer from "./AnimationRenderer";
 
 //declare var WebGLDebugUtils;
 const glOptions = {
@@ -60,6 +61,7 @@ export function init(canvas: HTMLCanvasElement): void {
 	PlayerRenderer.init(gl);
 	TransitionRenderer.init(gl);
 	if (Config.get<boolean>("fx")) { FX.init(gl); }
+	AnimationRenderer.init(gl);
 }
 
 export function setGame(g: Game) {
@@ -78,6 +80,9 @@ export function draw() {
 	
 	game.OnlinePlayers.forEach(player => { PlayerRenderer.draw(transformMatrix, player); });
 	PlayerRenderer.draw(transformMatrix, game.Player, game.Time);
+
+	// render animations
+	game.Animations.get().forEach(a => AnimationRenderer.render(a, transformMatrix));
 
 	// handle transition
 	let t;

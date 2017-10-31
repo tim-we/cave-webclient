@@ -10,7 +10,7 @@ var vertexPosAttrib: number = -1;
 var uniformDanger: WebGLUniformLocation = null;
 var uniformRatio: WebGLUniformLocation = null;
 
-export function init(_gl: WebGLRenderingContext) {
+export function init(_gl: WebGLRenderingContext):void {
 	gl = _gl;
 
 	// create program
@@ -35,6 +35,7 @@ export function init(_gl: WebGLRenderingContext) {
 	data[4] =  1.0; data[5] = -1.0;
 	data[6] =  1.0; data[7] =  1.0;
 
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
 }
 
@@ -42,9 +43,9 @@ export function danger(d: number): void {
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 	gl.useProgram(program);
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.enableVertexAttribArray(vertexPosAttrib);
 	gl.vertexAttribPointer(vertexPosAttrib, 2, gl.FLOAT, false, 2 * 4, 0);
-	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 
 	// no stencil
 	gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
@@ -55,4 +56,6 @@ export function danger(d: number): void {
 	gl.uniform1f(uniformRatio, gl.drawingBufferHeight / gl.drawingBufferWidth);
 
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // 2 triangles
+
+	gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }

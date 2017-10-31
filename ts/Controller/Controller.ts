@@ -21,31 +21,57 @@ window.addEventListener("load", () => {
 	GameLog.log("Inititalizing view components...");
 	View.init(mainloop);
 
-	GameLog.log("Connecting...");
+	startGame();
+});
 
+function mainloop() {
+	let game: Game = Model.getGame();
+
+	if (game) {
+		game.Player.setForce(UserInput.isPressed());
+	}
+
+	Model.update();
+}
+
+function serverUpdateHandler(data: IServerMessage) {
+	let game: Game = Model.getGame();
+
+	if(game) {
+		game.updateData(data);
+	}
+}
+
+function startGame() {
+	GameLog.log("Connecting...");
+	
 	connection.connect("Ulysses")
 		.then(() => {
 			GameLog.log("Waiting for round to start...");
 			return connection.waitForStart();
-		}, (reason) => {
-			GameLog.error("Connection failed: " + reason);
 		})
-		.then((data:IServerGameStart) => {
-			connection.setUpdateListener(serverUpdateHandler);
-			GameLog.log("Starting game!");
+		.then(roundController)
+		.catch((reason) => {
+			GameLog.error(reason);
+		});
+}
 
-			Model.newGame(data);
+function roundController(data:IServerGameStart) {
+	connection.setUpdateListener(serverUpdateHandler);
+	GameLog.log("Starting game!");
 
-			mainloop();
-			
-			View.startDrawLoop();
+	Model.newGame(data);
 
-			Model.getGame().Countdown.addListener(t => {
-				GameLog.log(`${t}...`);
-			});
+	mainloop();
+	
+	View.startDrawLoop();
 
-			return Model.getGame().Countdown.waitForGameStart();
-		})
+	Model.getGame().Countdown.addListener(t => {
+		GameLog.log(`${t}...`);
+	});
+
+	return Model.getGame().Countdown
+		.waitForGameStart()
 		.then(() => {
 			GameLog.log("Go!");
 
@@ -58,27 +84,17 @@ window.addEventListener("load", () => {
 		.then(() => {
 			GameLog.log("Game has ended.", true);
 
+			return wait(1000);
 		})
-		.catch((reason) => {
-			GameLog.error("Something went wrong: " + reason);
-		});
-	
-});
+		.then(() => {
+			GameLog.log("Waiting for next round...");
 
-function mainloop() {
-	let game: Game = Model.getGame();
-
-	if (game) {
-		game.Player.setForce(UserInput.isPressed());
-
-		game.update();
-	}
+			return connection.waitForStart();
+		}).then(roundController);
 }
 
-function serverUpdateHandler(data: IServerMessage) {
-	let game: Game = Model.getGame();
-
-	if(game) {
-		game.updateData(data);
-	}
+function wait(time: number):Promise<void> {
+	return new Promise(resolve => {
+		setTimeout(resolve, time);
+	});
 }
