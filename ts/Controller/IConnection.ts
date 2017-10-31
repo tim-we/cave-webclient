@@ -17,7 +17,7 @@ export interface Connection {
 
 	isConnected: () => boolean;
 
-	updateState: (model:Game) => void;
+	updateState: (game:Game) => void;
 
 	setUpdateListener: (x:GameUpdateListener) => void;
 }

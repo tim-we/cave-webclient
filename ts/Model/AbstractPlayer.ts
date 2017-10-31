@@ -18,7 +18,7 @@ export default abstract class AbstractPlayer {
 	public Color: Color;
 
 	public Position: Vector; // current (interpolated) position
-	private Velocity:Vector;
+	public Velocity:Vector;
 	private VelOrthoDir:Vector;
 
 	public Layer: number; // integer >= 0

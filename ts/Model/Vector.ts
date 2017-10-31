@@ -82,4 +82,11 @@ export default class Vector {
 		gl.uniform2fv(location, this.data);
 	}
 
+	public serverData() {
+		return {
+			x: this.data[0],
+			y: this.data[1]
+		}
+	}
+
 }

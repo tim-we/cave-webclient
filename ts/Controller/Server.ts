@@ -6,6 +6,8 @@ import {
 import {
 	IClientStateUpdate,
 	IClientInit,
+	IClientMessage,
+
 	IServerMessage,
 	IServerGameStateUpdate,
 	IServerGameStart,
@@ -91,7 +93,6 @@ export default class Server implements Connection {
 	}
 
 	public waitForStart(): Promise<IServerGameStart> {
-		console.log("Waiting for round start...");
 
 		return new Promise<IServerGameStart>((resolve, reject) => {
 			if(this.isConnected()) {
@@ -125,14 +126,23 @@ export default class Server implements Connection {
 		return this.ws && this.ws.readyState === this.ws.OPEN;
 	}
 
-	public updateState(model:Game) {
+	public updateState(game: Game) {
+		let player = game.Player;
+		
 		let msg: IClientStateUpdate = {
 			type: "state",
-			time: 0, // TODO: model time
-			pos: { x: 0, y: 0},
-			vel: { x: 0, y: 0},
-			pow: model.Player.getForce()
+			time: game.Time,
+			pos: player.Position.serverData(),
+			vel: player.Velocity.serverData(),
+			pow: player.getForce(),
+			alv: player.Alive
 		};
+
+		this.send(msg);
+	}
+
+	private send(msg: IClientMessage): void {
+		this.ws.send(JSON.stringify(msg));
 	}
 
 	public setUpdateListener(listener: GameUpdateListener) {
@@ -152,7 +162,7 @@ export default class Server implements Connection {
 				name: name
 			}
 
-			this.ws.send(JSON.stringify(msg));
+			this.send(msg);
 		}
 	}
 }

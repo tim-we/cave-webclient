@@ -16,7 +16,7 @@ export interface IPlayerInitData {
 /* --------------------------------------------------------- */
 
 export interface IClientMessage {
-	type: "state" | "init" | "death";
+	type: "state" | "init";
 }
 
 export interface IClientStateUpdate extends IClientMessage {
@@ -25,16 +25,12 @@ export interface IClientStateUpdate extends IClientMessage {
 	pos: IVector; // position
 	vel: IVector; // velocity
 	pow: boolean; // input pressed?
+	alv: boolean; // alive
 }
 
 export interface IClientInit extends IClientMessage {
 	type: "init";
 	name: string;
-}
-
-export interface IClientDeath extends IClientMessage {
-	type: "death";
-	position: IVector;
 }
 
 /* --------------------------------------------------------- */

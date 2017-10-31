@@ -20,7 +20,8 @@ export default class LocalTestServer implements Connection {
 	private gameStarted:boolean = false;
 	private updateInterval: number;
 	private RoundStart: number;
-	private callback:GameUpdateListener = null;
+	private callback: GameUpdateListener = null;
+	private playerAlive: boolean = true;
 
 	public constructor() {
 		this.RoundStart = Date.now() + 3;
@@ -63,26 +64,30 @@ export default class LocalTestServer implements Connection {
 
 	public waitForStart(): Promise<IServerGameStart> {
 
-		return new Promise<IServerGameStart>((resolve, reject) => {
-			if(!this.connected || this.gameStarted) {
-				reject();
-			} else {
-				this.gameStarted = true;
+		return wait(this.playerAlive ? 1000 : 3000).then(() => {
+			this.playerAlive = true;
 
-				resolve({
-					type: "start",
-					index: 0,	// player index
-					time: -3,
-					playerInitData: [
-						{ name: "Bob", color: 0 }
-					],
-					mapInit: [-.9, -1, .9, -1, -.9, .75, .9, .75],
-					rotation: 1.5 * Math.PI
-				});
-
-				setTimeout(_this => { _this.sendMapUpdate(0); }, 0, this);
-				setTimeout(_this => { _this.sendMapUpdate(1); }, 100, this);
-			}
+			return new Promise<IServerGameStart>((resolve, reject) => {
+				if(!this.connected || this.gameStarted) {
+					reject();
+				} else {
+					this.gameStarted = true;
+	
+					resolve({
+						type: "start",
+						index: 0,	// player index
+						time: -3,
+						playerInitData: [
+							{ name: "Bob", color: 0 }
+						],
+						mapInit: [-.9, -1, .9, -1, -.9, .75, .9, .75],
+						rotation: 1.5 * Math.PI
+					});
+	
+					setTimeout(_this => { _this.sendMapUpdate(0); }, 0, this);
+					setTimeout(_this => { _this.sendMapUpdate(1); }, 100, this);
+				}
+			});
 		});
 	}
 
@@ -109,8 +114,12 @@ export default class LocalTestServer implements Connection {
 		return this.connected;
 	}
 
-	public updateState(model:Game) {
-		// ignore data for now
+	public updateState(game:Game) {
+		if (this.playerAlive && !game.Player.Alive) {
+			this.playerAlive = false;
+
+			this.gameStarted = false;
+		}
 	}
 
 	public setUpdateListener(listener: GameUpdateListener) {
@@ -119,4 +128,10 @@ export default class LocalTestServer implements Connection {
 		}
 	}
 
+}
+
+function wait(time: number):Promise<void> {
+	return new Promise(resolve => {
+		setTimeout(resolve, time);
+	});
 }

@@ -22,6 +22,8 @@ window.addEventListener("load", () => {
 	View.init(mainloop);
 
 	startGame();
+
+	View.startDrawLoop();
 });
 
 function mainloop() {
@@ -47,6 +49,7 @@ function startGame() {
 	
 	connection.connect("Ulysses")
 		.then(() => {
+			Model.setConnection(connection);
 			GameLog.log("Waiting for round to start...");
 			return connection.waitForStart();
 		})
@@ -63,8 +66,6 @@ function roundController(data:IServerGameStart) {
 	Model.newGame(data);
 
 	mainloop();
-	
-	View.startDrawLoop();
 
 	Model.getGame().Countdown.addListener(t => {
 		GameLog.log(`${t}...`);
@@ -75,14 +76,14 @@ function roundController(data:IServerGameStart) {
 		.then(() => {
 			GameLog.log("Go!");
 
-			setTimeout(() => {
+			wait(1000).then(() => {
 				Model.getGame().Player.setFirstInputReceived();
-			}, 1000);
+			});
 
 			return Model.getGame().waitForEnd();
 		})
 		.then(() => {
-			GameLog.log("Game has ended.", true);
+			GameLog.log("Game has ended.");
 
 			return wait(1000);
 		})
