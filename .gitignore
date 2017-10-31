@@ -1,4 +1,4 @@
 js/*.js
-!js/bundle/*.js
+!js/bundle/demo.js
 .vscode/
 node_modules/
